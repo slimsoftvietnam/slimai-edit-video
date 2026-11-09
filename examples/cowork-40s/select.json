@@ -1,0 +1,21 @@
+{
+ "clips": [
+  {"a": 0.0, "b": 4.84, "spk": "W", "beat": "hook", "shot": "med", "hard": {"a": 1.0}},
+  {"a": 6.16, "b": 9.18, "spk": "M", "beat": "turn", "shot": "med"},
+  {"a": 17.8, "b": 22.62, "spk": "M", "beat": "folder", "shot": "med"},
+  {"a": 22.66, "b": 27.7, "spk": "M", "beat": "folder", "shot": "wide"},
+  {"a": 28.06, "b": 35.26, "spk": "M", "beat": "repo", "shot": "med"},
+  {"a": 36.04, "b": 38.76, "spk": "W", "beat": "question", "shot": "med"},
+  {"a": 39.38, "b": 43.6, "spk": "M", "beat": "trash", "shot": "med"},
+  {"a": 43.72, "b": 53.88, "spk": "M", "beat": "history", "shot": "wide"}
+ ],
+ "fixes": [
+  [0.0, "Claude", "Thế Claude"], [2.08, "và", "với cả"], [3.36, "có", "thì nó có"],
+  [17.8, "thường", "Thường"], [21.12, "Repo,", "repo,"], [22.1, "Folder", "folder"],
+  [23.76, "Upload", "upload"], [24.12, "Folder", "folder"], [25.52, "Folder", "folder"],
+  [26.62, "xác", "thao"], [27.14, "tán", "tác"],
+  [39.38, "C", "Cái"], [40.88, "khủng", "cùng"], [42.26, "cho", "rồi"],
+  [43.72, "Mà", "Còn"], [43.92, "nơi", "như"], [44.2, "khẳng", "nói"], [44.34, "hạn", ""],
+  [50.38, "Thì", "thì"]
+ ]
+}

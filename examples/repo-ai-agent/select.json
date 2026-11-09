@@ -1,0 +1,434 @@
+{
+ "clips": [
+  {
+   "a": 348.5,
+   "b": 351.62,
+   "spk": "M",
+   "beat": "hook",
+   "shot": "close",
+   "hard": {
+    "a": 348.22
+   }
+  },
+  {
+   "a": 352.3,
+   "b": 353.68,
+   "spk": "M",
+   "beat": "hook",
+   "shot": "med"
+  },
+  {
+   "a": 37.42,
+   "b": 40.02,
+   "spk": "W",
+   "beat": "setup",
+   "shot": "med"
+  },
+  {
+   "a": 47.98,
+   "b": 50.3,
+   "spk": "W",
+   "beat": "setup",
+   "shot": "close"
+  },
+  {
+   "a": 51.9,
+   "b": 55.6,
+   "spk": "M",
+   "beat": "def",
+   "shot": "med"
+  },
+  {
+   "a": 56.36,
+   "b": 58.42,
+   "spk": "M",
+   "beat": "def",
+   "shot": "wide"
+  },
+  {
+   "a": 61.9,
+   "b": 65.3,
+   "spk": "M",
+   "beat": "myth",
+   "shot": "med"
+  },
+  {
+   "a": 66.58,
+   "b": 69.38,
+   "spk": "M",
+   "beat": "myth",
+   "shot": "close"
+  },
+  {
+   "a": 71.94,
+   "b": 76.22,
+   "spk": "M",
+   "beat": "memory",
+   "shot": "wide"
+  },
+  {
+   "a": 76.68,
+   "b": 78.14,
+   "spk": "M",
+   "beat": "memory",
+   "shot": "close"
+  },
+  {
+   "a": 79.08,
+   "b": 81.1,
+   "spk": "M",
+   "beat": "memory",
+   "shot": "med"
+  },
+  {
+   "a": 81.78,
+   "b": 86.62,
+   "spk": "M",
+   "beat": "memory",
+   "shot": "wide"
+  },
+  {
+   "a": 92.16,
+   "b": 93.76,
+   "spk": "M",
+   "beat": "memory",
+   "shot": "med"
+  },
+  {
+   "a": 94.64,
+   "b": 96.66,
+   "spk": "M",
+   "beat": "memory",
+   "shot": "close"
+  },
+  {
+   "a": 97.94,
+   "b": 100.08,
+   "spk": "M",
+   "beat": "branch",
+   "shot": "wide"
+  },
+  {
+   "a": 101.2,
+   "b": 103.14,
+   "spk": "M",
+   "beat": "branch",
+   "shot": "med"
+  },
+  {
+   "a": 107.46,
+   "b": 108.92,
+   "spk": "M",
+   "beat": "branch",
+   "shot": "close"
+  },
+  {
+   "a": 108.94,
+   "b": 115.72,
+   "spk": "M",
+   "beat": "branch",
+   "shot": "wide"
+  },
+  {
+   "a": 116.17,
+   "b": 117.68,
+   "spk": "M",
+   "beat": "branch",
+   "shot": "med"
+  },
+  {
+   "a": 118.12,
+   "b": 123.2,
+   "spk": "M",
+   "beat": "thesis",
+   "shot": "close",
+   "hard": {
+    "a": 118.25,
+    "b": 123.95
+   }
+  },
+  {
+   "a": 126.0,
+   "b": 130.48,
+   "spk": "W",
+   "beat": "why",
+   "shot": "med"
+  },
+  {
+   "a": 142.16,
+   "b": 144.28,
+   "spk": "M",
+   "beat": "why",
+   "shot": "med"
+  },
+  {
+   "a": 146.26,
+   "b": 149.1,
+   "spk": "M",
+   "beat": "why",
+   "shot": "wide"
+  },
+  {
+   "a": 149.84,
+   "b": 155.32,
+   "spk": "M",
+   "beat": "why",
+   "shot": "med"
+  },
+  {
+   "a": 156.2,
+   "b": 160.24,
+   "spk": "M",
+   "beat": "why",
+   "shot": "close"
+  },
+  {
+   "a": 164.56,
+   "b": 168.68,
+   "spk": "M",
+   "beat": "why",
+   "shot": "med"
+  },
+  {
+   "a": 178.92,
+   "b": 183.28,
+   "spk": "M",
+   "beat": "safety",
+   "shot": "wide"
+  },
+  {
+   "a": 183.4,
+   "b": 185.1,
+   "spk": "M",
+   "beat": "safety",
+   "shot": "close"
+  },
+  {
+   "a": 185.64,
+   "b": 190.2,
+   "spk": "M",
+   "beat": "safety",
+   "shot": "med"
+  },
+  {
+   "a": 190.5,
+   "b": 193.44,
+   "spk": "M",
+   "beat": "safety",
+   "shot": "close"
+  },
+  {
+   "a": 253.46,
+   "b": 256.92,
+   "spk": "M",
+   "beat": "analogy",
+   "shot": "med"
+  },
+  {
+   "a": 207.92,
+   "b": 212.18,
+   "spk": "M",
+   "beat": "practical",
+   "shot": "wide"
+  },
+  {
+   "a": 213.04,
+   "b": 214.04,
+   "spk": "M",
+   "beat": "practical",
+   "shot": "wide"
+  },
+  {
+   "a": 215.16,
+   "b": 216.48,
+   "spk": "M",
+   "beat": "practical",
+   "shot": "med"
+  },
+  {
+   "a": 217.46,
+   "b": 218.6,
+   "spk": "M",
+   "beat": "practical",
+   "shot": "close"
+  },
+  {
+   "a": 367.74,
+   "b": 370.8,
+   "spk": "M",
+   "beat": "closing",
+   "shot": "med"
+  },
+  {
+   "a": 371.38,
+   "b": 375.68,
+   "spk": "M",
+   "beat": "closing",
+   "shot": "wide"
+  },
+  {
+   "a": 354.04,
+   "b": 356.92,
+   "spk": "M",
+   "beat": "closing",
+   "shot": "close"
+  }
+ ],
+ "fixes": [
+  [
+   52.8,
+   "biết",
+   "viết"
+  ],
+  [
+   54.14,
+   "Repository.",
+   "Repository."
+  ],
+  [
+   57.34,
+   "Ngốc",
+   "Nghĩa"
+  ],
+  [
+   62.98,
+   "thưởng",
+   "tưởng"
+  ],
+  [
+   116.84,
+   "dạy",
+   "rẽ"
+  ],
+  [
+   117.02,
+   "anh",
+   "nhánh"
+  ],
+  [
+   117.92,
+   "cái",
+   "Cái"
+  ],
+  [
+   119.7,
+   "nốt",
+   "nôm"
+  ],
+  [
+   126.0,
+   "vì",
+   "Vì"
+  ],
+  [
+   142.16,
+   "agent",
+   "Agent"
+  ],
+  [
+   146.26,
+   "nó",
+   "Nó"
+  ],
+  [
+   157.96,
+   "nào",
+   "sao"
+  ],
+  [
+   164.56,
+   "Vì",
+   "Vì"
+  ],
+  [
+   178.92,
+   "Anh",
+   "Anh"
+  ],
+  [
+   184.72,
+   "chi",
+   "trí"
+  ],
+  [
+   215.16,
+   "nhận",
+   "hiện"
+  ],
+  [
+   215.56,
+   "ra",
+   "nay"
+  ],
+  [
+   217.46,
+   "Một",
+   "Mà"
+  ],
+  [
+   253.58,
+   "nay",
+   "na"
+  ],
+  [
+   352.3,
+   "Thứ",
+   "Thực"
+  ],
+  [
+   348.5,
+   "agent",
+   "Agent"
+  ],
+  [
+   117.9,
+   "Như",
+   ""
+  ],
+  [
+   348.14,
+   "nã",
+   ""
+  ],
+  [
+   348.32,
+   "bui",
+   ""
+  ],
+  [
+   371.38,
+   "Và",
+   "mà"
+  ],
+  [
+   372.02,
+   "vim",
+   "lưu"
+  ],
+  [
+   372.26,
+   "sử",
+   "trữ"
+  ],
+  [
+   161.08,
+   "Điều",
+   "Điều"
+  ],
+  [
+   118.12,
+   "repo",
+   "Repo"
+  ],
+  [
+   97.94,
+   "điểm",
+   "Điểm"
+  ],
+  [
+   70.98,
+   "Em",
+   "Em"
+  ]
+ ]
+}

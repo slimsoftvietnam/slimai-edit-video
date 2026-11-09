@@ -1,0 +1,53 @@
+=== TIÊU ĐỀ (chọn 1) ===
+[1] Repo là gì? Vì sao dùng AI agent phải có repo        <- khuyên dùng: khớp từ khóa "repo là gì" + "ai agent"
+[2] AI agent tự quyết mọi thứ: đáng sợ hay an toàn?
+[3] Repo là gì? "Folder có trí nhớ" giúp AI agent an toàn
+
+
+=== MÔ TẢ (copy từ dòng dưới đến hết hashtag) ===
+AI agent tự quyết mọi thứ thì có đáng sợ không? Thực ra rất an toàn, nếu nó làm việc trong một repo.
+Repo là gì, khác folder ở đâu, vì sao dùng AI agent phải có repo: xem 2 phút là hiểu.
+
+Giao việc cho AI agent là ủy thác. Nó tự quyết định, tự làm phần lớn công việc. Vậy bạn có muốn biết nó đã làm gì không? Và nếu nó làm sai, bạn quay lại bằng cách nào?
+
+Folder thường không trả lời được. Bạn copy, xóa, sửa file, folder không nhớ gì cả.
+Repo (repository) thì khác. Repo là một folder có trí nhớ:
+• Có lịch sử: sửa gì, xóa gì, lúc nào, đều được ghi lại
+• Có nhánh (branch): từ một tài liệu gốc, tách ra bản riêng cho khách A, B, C mà không đè lên nhau
+• Có đường lui: agent làm sai thì quay lại phiên bản trước. Chatbot thông thường không có điều này
+
+Repo giống một camera giám sát: agent làm gì, bạn đều thấy.
+
+Mẹo áp dụng ngay: kết nối kết quả làm việc của agent với một repo trên GitHub (phổ biến nhất, kết nối rất dễ). Đừng chỉ lưu code. Tài liệu, bản plan, kế hoạch cũng nên nằm trong repo.
+
+Trước khi giao việc thật cho AI agent, hãy cho nó một repo.
+
+CHƯƠNG
+0:00 Repo là gì? AI agent tự quyết có đáng sợ không
+0:16 Repo khác folder ở đâu: repo có lịch sử
+0:38 Rẽ nhánh (branch) và "folder có trí nhớ"
+0:58 Vì sao dùng AI agent cần repo
+1:20 Agent làm sai? Quay lại phiên bản trước
+1:37 Mẹo: kết nối repo với GitHub, lưu cả tài liệu và kế hoạch
+
+Bạn đang giao cho AI agent việc gì? Comment bên dưới để mình làm video tiếp đúng chỗ bạn đang vướng.
+Đăng ký kênh để không lỡ các video tiếp theo về AI agent.
+
+#AIagent #Repo #GitHub #AI
+
+
+=== THẺ (Tags, dán vào ô Thẻ) ===
+repo là gì, repo github là gì, repository là gì, repo agent, ai agent, ai agent là gì, dùng ai agent an toàn, github là gì, github cho người mới bắt đầu, branch là gì, repo la gi, ai agent la gi, github la gi
+
+
+=== BÌNH LUẬN GHIM ===
+Bạn đã để AI agent sửa file thật bao giờ chưa? Nó từng làm sai gì, và bạn xử lý thế nào? Kể ở đây để mọi người cùng rút kinh nghiệm.
+
+
+=== KHI ĐĂNG ===
+- Ngôn ngữ video, tiêu đề, mô tả: Tiếng Việt.
+- Phụ đề: tải file Repo_AI_Agent_YouTube.srt (tiếng Việt) để YouTube đọc được toàn bộ lời thoại đã sửa chữ.
+- Thumbnail: nếu có Thử nghiệm và so sánh (Test & compare), chạy cả 2 thumbnail A và B.
+- Màn hình kết thúc: 8 giây cuối để trống nửa phải, đặt 1 video gợi ý + nút Đăng ký vào đó.
+- Thêm video vào một playlist có tên chứa từ khóa, ví dụ "AI agent cho người mới".
+- Danh mục: Khoa học và công nghệ.

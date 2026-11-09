@@ -1,0 +1,8 @@
+# python 3.12, plus ffmpeg with libx264, zscale and lut3d on PATH (check with scripts/doctor.py)
+numpy
+scipy
+opencv-python
+numba
+torch
+openai-whisper
+skia-python==87.9   # later versions were about 100x slower on translucent fills on Windows

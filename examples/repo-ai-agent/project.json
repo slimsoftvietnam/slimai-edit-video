@@ -1,0 +1,53 @@
+{
+ "name": "repo-ai-agent",
+ "source": "<path to the source video>",
+ "src_w": 1920,
+ "src_h": 1080,
+ "fps": 30,
+ "transfer": "hlg",
+ "pix_fmt": "yuv420p10le",
+ "color_space": "bt2020nc",
+ "color_range": "tv",
+ "duration": 387.09,
+ "bit_rate_mbps": 8.7,
+ "look": "cine_warm",
+ "language": "vi",
+ "whisper_prompt": "Cuộc trò chuyện về AI, công nghệ, kinh doanh và cuộc sống. ChatGPT, Claude, AI agent, automation.",
+ "speakers": {
+  "M": {
+   "face": [
+    1305,
+    520
+   ],
+   "head_top": 445,
+   "box": [
+    1200,
+    425,
+    1410,
+    640
+   ]
+  },
+  "W": {
+   "face": [
+    655,
+    525
+   ],
+   "head_top": 400,
+   "box": [
+    535,
+    385,
+    775,
+    640
+   ]
+  }
+ },
+ "matte": {
+  "crop": [
+   256,
+   160,
+   1408,
+   920
+  ],
+  "scale": 2.0
+ }
+}
