@@ -167,18 +167,50 @@ LOOKS = {
     # clean documentary: filmic highlights, almost no colour opinion
     "neutral": dict(ev=-0.05, slope=(1, 1, 1), power=(1.30, 1.30, 1.30), sat=1.25, chroma=1.0, selective=[],
                     density=0.04, contrast=(0.55, 1.12), shadow=(0, 0), high=(0, 0), black=0.03, white=0.99),
+    # no grade at all: the colours the phone recorded, as an ordinary screen shows them (for before/after)
+    "iphone": dict(natural=True),
 }
 
+LUMA_2020 = np.array([0.2627, 0.6780, 0.0593], np.float32)
+NAT_GAIN = 1.15      # HDR reference white lands near screen white and 18 % grey near 0.42, as a phone shows it
 
-def apply_look(signal, look="cine_warm", transfer="hlg"):
+
+def natural(signal, transfer):
+    """The camera's own colours on an ordinary (SDR) screen: no film curve, no colour moves. HLG and PQ go
+    through the BT.2100 display model, HDR reference white (203 nits) lands just under SDR white, and highlights
+    roll off on the brightest channel so that hues hold instead of clipping. SDR sources pass through."""
+    x = np.clip(signal, 0.0, 1.0)
+    if transfer == "sdr":
+        return x
+    if transfer == "hlg":
+        scene = hlg_to_scene(x)
+        y = np.maximum(scene @ LUMA_2020, 1e-6)[..., None]
+        nits = 1000.0 * y ** 0.2 * scene          # HLG system gamma 1.2 on a 1000-nit display
+    else:
+        nits = pq_to_nits(x)
+    lin = (nits / 203.0 * NAT_GAIN) @ M_2020_709.T
+    y = (lin @ LUMA)[..., None]
+    lo = lin.min(axis=-1, keepdims=True)
+    k = np.where(lo < 0, y / np.maximum(y - lo, 1e-6), 1.0)     # out of BT.709: toward its own luminance
+    lin = y + (lin - y) * np.clip(k, 0.0, 1.0)
+    m = lin.max(axis=-1, keepdims=True)
+    knee = 0.75
+    m2 = np.where(m <= knee, m, knee + (1 - knee) * (1 - np.exp(-(m - knee) / (1 - knee))))
+    lin = lin * np.where(m > 1e-6, m2 / np.maximum(m, 1e-6), 1.0)
+    return encode_display(lin)
+
+
+def apply_look(signal, look="iphone", transfer="hlg"):
     """signal: float array (..., 3), camera R'G'B' in [0,1]. Returns display R'G'B' in [0,1]."""
     p = LOOKS[look]
+    if p.get("natural"):
+        return natural(signal.astype(np.float32), transfer)
     lin = decode(signal.astype(np.float32), transfer) * 2.0 ** p["ev"]
     lin = tone_map(lin, p["slope"], p["power"], p["sat"])
     return encode_display(print_look(lin, p))
 
 
-def write_cube(path, look="cine_warm", transfer="hlg", size=65):
+def write_cube(path, look="iphone", transfer="hlg", size=65):
     r = np.linspace(0, 1, size, dtype=np.float32)
     b, g, rr = np.meshgrid(r, r, r, indexing="ij")     # .cube order: R fastest, then G, then B
     out = apply_look(np.stack([rr, g, b], -1).reshape(-1, 3), look, transfer)

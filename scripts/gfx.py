@@ -250,6 +250,29 @@ def icon(c, kind, x, y, s, rgb=WHITE, a=255, sw=None, prog=1.0):
         path.lineTo(0, -h * 0.75)
         path.lineTo(h * 0.4, -h * 0.35)
         c.drawPath(path, p)
+    elif kind == "database":
+        rx, ry = h * 0.7, h * 0.22
+        c.drawOval(skia.Rect(-rx, -h * 0.8, rx, -h * 0.8 + 2 * ry), p)
+        for yy in (-h * 0.2, h * 0.36):
+            arc = skia.Path()
+            arc.addArc(skia.Rect(-rx, yy - ry, rx, yy + ry), 0, 180)
+            c.drawPath(arc, p)
+        c.drawLine(-rx, -h * 0.8 + ry, -rx, h * 0.36, p)
+        c.drawLine(rx, -h * 0.8 + ry, rx, h * 0.36, p)
+    elif kind == "browser":
+        c.drawRRect(rrect(-h * 0.85, -h * 0.65, h * 0.85, h * 0.7, h * 0.12), p)
+        c.drawLine(-h * 0.85, -h * 0.3, h * 0.85, -h * 0.3, p)
+        for k in range(3):
+            c.drawCircle(-h * 0.62 + k * h * 0.2, -h * 0.48, h * 0.05, fill(rgb, a))
+    elif kind == "chat":
+        path = skia.Path()
+        path.addRRect(rrect(-h * 0.85, -h * 0.7, h * 0.85, h * 0.4, h * 0.25))
+        path.moveTo(-h * 0.35, h * 0.4)
+        path.lineTo(-h * 0.55, h * 0.8)
+        path.lineTo(-h * 0.05, h * 0.4)
+        c.drawPath(path, p)
+        for k in range(3):
+            c.drawCircle(-h * 0.4 + k * h * 0.4, -h * 0.15, h * 0.08, fill(rgb, a))
     elif kind == "brain":
         # simple memory "chip" icon
         c.drawRRect(rrect(-h * 0.55, -h * 0.55, h * 0.55, h * 0.55, h * 0.12), p)

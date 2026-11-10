@@ -217,14 +217,18 @@ class Ctx:
 FINISH = None
 
 
+# the "iphone" look (the default) is the camera's own colour: no film grain, halation, vignette or light leaks
+NATURAL = E.CFG.get("look", "iphone") == "iphone"
+
+
 def get_finish():
     global FINISH
     if FINISH is None:
         look = E.CFG.get("finish", {})
         # platform codecs eat grain first: TikTok's low bitrate gets the lightest coat
-        grain = float(os.environ.get("EDIT_GRAIN", look.get("grain", 1.3 if D.YT else 1.0)))
-        hal = float(os.environ.get("EDIT_HALATION", look.get("halation", 0.7)))
-        FINISH = E.Finish(vignette=look.get("vignette", 0.20), grain=grain, halation=hal)
+        grain = float(os.environ.get("EDIT_GRAIN", look.get("grain", 0.0 if NATURAL else (1.3 if D.YT else 1.0))))
+        hal = float(os.environ.get("EDIT_HALATION", look.get("halation", 0.0 if NATURAL else 0.7)))
+        FINISH = E.Finish(vignette=look.get("vignette", 0.0 if NATURAL else 0.20), grain=grain, halation=hal)
     return FINISH
 
 
@@ -336,6 +340,8 @@ def apply_cctv(img, v):
 
 
 def compose(frame, src_f, t, f, ctx):
+    if src_f is not None:
+        E.use_take(src_f / FPS)
     cam, speed, ov_a, pp, rect = camera(t)
     ctx.reset()
     ctx.cam = cam
@@ -363,7 +369,7 @@ def compose(frame, src_f, t, f, ctx):
     base = pip_stage(frame, view, vbox, ctx, pp) if pp > 0 else view
     if ctx.cctv > 0:
         base = apply_cctv(base, ctx.cctv)
-    if ctx.leak is not None:
+    if ctx.leak is not None and not NATURAL:
         p, strength = ctx.leak
         a = math.sin(math.pi * p) * strength
         lw = OW // 8

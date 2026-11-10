@@ -34,9 +34,13 @@ def source(sf):
 
 
 def cam_for(z, fx_screen, fy_screen, spk=None):
-    spk = spk or next(iter(E.FACE))
-    fx, fy, _ = E.FACE[spk]
-    return E.clamp_cam(fx - (fx_screen - W / 2) / (z * E.BASE), fy - (fy_screen - H / 2) / (z * E.BASE), z)
+    """camera putting the speaker's face at (fx_screen, fy_screen); evaluated inside compose(), once the take of
+    the chosen frame is known."""
+    def cam():
+        name = spk or next(iter(E.FACE))
+        fx, fy, _ = E.FACE[name]
+        return E.clamp_cam(fx - (fx_screen - W / 2) / (z * E.BASE), fy - (fy_screen - H / 2) / (z * E.BASE), z)
+    return cam
 
 
 def pop(img, matte, keep_x0):
@@ -58,6 +62,8 @@ def pop(img, matte, keep_x0):
 
 
 def compose(sf, cam, draw_behind, draw_front, keep_x0=0):
+    E.use_take(sf / E.FPS)
+    cam = cam() if callable(cam) else cam
     fr = source(sf)
     M = E.view_matrix(cam, (0, 0))
     base = cv2.warpAffine(fr, M, (W, H), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)

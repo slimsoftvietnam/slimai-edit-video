@@ -1,6 +1,8 @@
 # Film look and sharpness
 
-## The look: a real print pipeline, not a filter
+The default look is `iphone`: the camera's own colour, no grade (see Looks below). Everything in the next section applies only when the user asks for a film look.
+
+## The film look: a real print pipeline, not a filter
 
 `scripts/film_look.py` builds a 65-point 3D LUT that runs directly on the camera signal:
 
@@ -15,9 +17,12 @@ Spatial film effects cannot live in a LUT, so `engine.Finish` applies them per f
 
 | Look | Character | Use |
 |---|---|---|
-| `cine_warm` | golden print, deep moss greens, natural skin | default, outdoors and warm interiors |
-| `teal_orange` | stronger hue separation, cooler greens | commercial, high energy |
-| `neutral` | filmic roll-off, no hue moves | corporate, skin-critical |
+| `iphone` | no grade: the camera's colours on an ordinary screen | **default**: the user prefers the phone's own colour |
+| `cine_warm` | golden print, deep moss greens, natural skin | on request: outdoors and warm interiors |
+| `teal_orange` | stronger hue separation, cooler greens | on request: commercial, high energy |
+| `neutral` | filmic roll-off, no hue moves | on request: corporate, skin-critical |
+
+`iphone` skips the tone map and print look. HLG and PQ go through the BT.2100 display model, HDR reference white (203 nits) lands just under screen white, and highlights roll off on the brightest channel so hues hold. On the worked example it came out slightly brighter and more saturated than libplacebo's bt.2390 tone map, which is close to how phone video usually looks. It cannot reproduce HDR playback on an iPhone screen, where highlights go brighter than white. `render.py` turns off grain, halation, vignette and light leaks for this look.
 
 Set it with `init_project --look`, or `"look"` in `project.json`, then rerun `build_master.py`. Test on stills without touching the project:
 

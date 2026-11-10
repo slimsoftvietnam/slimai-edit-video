@@ -38,6 +38,8 @@ Failures that actually happened, and what fixed them.
 - **Whisper mishears names and jargon.** Give a prompt, then correct by hand. Re-hear doubtful passages with `--range`, beam search is on there.
 - **A keyword-list prompt can make Whisper drop nearly everything, with no error.** Given "Claude Cowork, ChatGPT Work, repo, GitHub, ..." on a 54 s clip, it returned one sentence shaped like the prompt and treated the rest as silence. Write the prompt as one natural sentence in the video's language. `transcribe.py` now compares the words with the audio's speech envelope and re-hears any skipped stretch without the prompt. Read what it prints, and read the transcript before trusting it.
 - **Do not run Whisper while a 4K render is going.** A 2 minute job took 40 minutes.
+- **"ai" is also a Vietnamese pronoun.** "Dạo này ai cũng khoe" ("everyone shows off") came out as "AI cũng khoe" while captions mapped every "ai" to "AI". Whisper already writes the technology in capitals, so the default no longer maps it; never add "ai" to `KEEP_CASE` or `KEYS`.
+- **A source joined from several recordings can move the camera between them.** At the join the scene score is low (0.25), because the framing is almost the same. `find_faces.py` confirms candidate cuts by a moved background and stores positions per take; the engine switches take per frame. Check every panel of `faces_check.jpg`.
 - **Whisper word times drift at pauses.** `build_timeline.py` refines cuts on the audio envelope. Use `hard` in `select.json` when it still clips a syllable.
 - **Pitch-based speaker labels failed**: an excited male voice read as female. Raw mouth motion works: 55 of 55 clips checked by eye. Normalising it per person was far worse (22 of 38). Verify by eye anyway.
 

@@ -53,8 +53,10 @@ LABELS = []            # (time, "01", "title"): chapter rail, YouTube only
 YT_CHAPTERS = []       # (time, title) for the description; YouTube needs >= 10 s per chapter
 MUSIC = dict(drop=None, sections=[], stops=[], bpm=96.0, transpose=0, tail=None)
 KEYS = {}              # caption keyword -> (font kind, colour, size multiple)
-KEEP_CASE = {"github": "GitHub", "ai": "AI"}
-NO_BREAK = set()       # capitalised words that are not a sentence start, e.g. "Anh" in "tiếng Anh"
+# lower-case word -> displayed form. Never map "ai": in Vietnamese it is also the pronoun ("ai cũng" = everyone),
+# and Whisper already writes the technology as "AI".
+KEEP_CASE = {"github": "GitHub"}
+NO_BREAK = {"AI"}      # capitalised words that are not a sentence start, e.g. "Anh" in "tiếng Anh"
 CUES, EVENTS = [], []
 CCTV_T = [None, None]
 

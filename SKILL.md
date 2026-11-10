@@ -1,6 +1,6 @@
 ---
 name: slimai-edit-video
-description: Edit a talking-head, interview, podcast or single-shot video into a premium, retention-driven vertical video (TikTok, Reels, Shorts) and/or horizontal HD video (YouTube), entirely in code. Gives cinematic film colour, maximum sharpness, word-by-word captions, text standing behind the speaker, motion-graphics diagrams, picture-in-picture, code-written music and sound effects, thumbnails, SRT and chapters. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made cinematic or sharper, or turned into a TikTok or YouTube video, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic". Prefer it over ad-hoc ffmpeg commands for any edit longer than a simple trim.
+description: Edit a talking-head, interview, podcast or single-shot video into a premium, retention-driven vertical video (TikTok, Reels, Shorts) and/or horizontal HD video (YouTube), entirely in code. Keeps the phone's original colour by default (cinematic film looks on request), maximum sharpness, word-by-word captions, text standing behind the speaker, motion-graphics diagrams, picture-in-picture, code-written music and sound effects, thumbnails, SRT and chapters. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made cinematic or sharper, or turned into a TikTok or YouTube video, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic". Prefer it over ad-hoc ffmpeg commands for any edit longer than a simple trim.
 ---
 
 # SlimAI Edit Video
@@ -18,11 +18,11 @@ HD is what the user wants for YouTube. Render 4K (`--ss 2`, CRF 18) only if they
 
 ## Before starting
 
-Run `python <skill>/scripts/doctor.py` once per machine; missing packages are in `<skill>/requirements.txt`, and Whisper downloads its model (about 1.5 GB) on first use, so ask before installing or downloading. Then settle three things, and only ask when the request leaves one truly open:
+Run `python <skill>/scripts/doctor.py` once per machine; missing packages are in `<skill>/requirements.txt`, and Whisper downloads its model (about 1.5 GB) on first use, so ask before installing or downloading. Then settle three things:
 
-- **Formats**: both unless the user names one.
-- **Look**: `cine_warm` by default; `teal_orange` for stronger commercial contrast; `neutral` for corporate or skin-critical work.
-- **Project folder**: `<working dir>/projects/<slug>`. Deliverables go to `<working dir>/output`. Never overwrite an earlier deliverable; use a new name.
+- **Formats**: both unless the user names one. Do not ask.
+- **Colour**: always ask, with a preview, as step 1 describes, unless the request already says which colour. The default is `iphone`, the colour the phone recorded with no grade and no film grain, halation, vignette or light leaks.
+- **Project folder**: `<working dir>/projects/<slug>`. Deliverables go to `<working dir>/output`. Never overwrite an earlier deliverable; use a new name. Do not ask.
 
 Set expectations on time. On an i5 laptop a 2-minute edit from a 6-minute source takes about 20 min of transcription, 4 min for the master, 15 min for mattes (`matte.py`), and about 9 min each for the vertical and HD renders. Long steps go in the background, one heavy job at a time.
 
@@ -31,11 +31,23 @@ Set expectations on time. On an i5 laptop a 2-minute edit from a 6-minute source
 ### 1. Set up and listen
 
 ```bash
-python <skill>/scripts/init_project.py SOURCE PROJECT --look cine_warm --language vi --prompt "Cuộc trò chuyện về Claude Cowork, ChatGPT Work và GitHub."
-python <skill>/scripts/transcribe.py PROJECT
+python <skill>/scripts/init_project.py SOURCE PROJECT --language vi --prompt "Cuộc trò chuyện về Claude Cowork, ChatGPT Work và GitHub."
+python <skill>/scripts/transcribe.py PROJECT                 # start in the background, then ask about colour
+python <skill>/scripts/look_preview.py PROJECT PROJECT/look_choices.jpg
 python <skill>/scripts/find_faces.py PROJECT --names M,W
 python <skill>/scripts/speaker_hints.py PROJECT
 ```
+
+**Ask about colour on every new video**, unless the request already says which. Send `look_choices.jpg` (one frame of their video in all four looks) with SendUserFile, then ask one AskUserQuestion: "Bạn muốn video giữ màu nào? (xem ảnh 4 kiểu màu vừa gửi)", header "Màu video". Offer exactly these options, in this order: the default first, then at most three alternatives.
+
+| Label | `--look` | Description |
+|---|---|---|
+| Màu gốc iPhone (mặc định) | `iphone` | Giữ nguyên màu máy quay, tươi và sáng như khi xem trên điện thoại |
+| Màu phim ấm | `cine_warm` | Tông vàng ấm, cây cỏ xanh rêu, trời ngả kem; hợp cảnh ngoài trời, hoàng hôn |
+| Màu phim tương phản | `teal_orange` | Da ấm trên nền xanh lạnh, tương phản mạnh; hợp quảng cáo, nội dung năng động |
+| Màu trung tính | `neutral` | Vùng sáng mềm như phim, màu gần như giữ nguyên; hợp doanh nghiệp, cần màu da chuẩn |
+
+Pass the answer to `build_master.py --look`. If the user writes their own description instead, pick the closest look and say which one you used. If there is no clear answer, use `iphone`. To show two looks side by side later, copy the project folder (keep `matte/` and `audio_*`), rebuild its master with the other `--look`, and render it.
 
 `--prompt` tells Whisper the names and jargon to expect. Write it as one natural sentence in the video's language: a bare keyword list can make Whisper skip most of the speech. `init_project` warns about thin sources; pass those warnings on. `transcribe` reports any speech it had to re-hear or could not place, so read that output. Then look at `faces_check.jpg`. Everything that sits behind a head depends on those markers, so correct `project.json` by hand when one is off. Treat `speakers.txt` as a draft: open frames for any segment with a score below about 1.3. Mouth motion is reliable, voice pitch is not. Names in `--names` go left to right.
 
@@ -60,7 +72,7 @@ python <skill>/scripts/build_timeline.py PROJECT      # -> timeline.json, words.
 ### 3. Build the picture
 
 ```bash
-python <skill>/scripts/build_master.py PROJECT        # graded near-lossless master of only the used frames
+python <skill>/scripts/build_master.py PROJECT --look iphone    # the colour the user chose; near-lossless master of the used frames
 python <skill>/scripts/matte.py PROJECT               # person matte for each of those frames
 ```
 

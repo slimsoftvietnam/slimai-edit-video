@@ -1,6 +1,6 @@
 """Graded master holding only the frames the edit uses (source order) + master_index.json.
 
-python build_master.py PROJECT [--crf 6] [--no-denoise] [--look cine_warm]
+python build_master.py PROJECT [--crf 6] [--no-denoise] [--look iphone]
 
 Quality path: 10-bit source -> float RGB -> film LUT (float, tetrahedral) -> near-lossless 4:4:4.
 There is no 8-bit step before the grade, which is where the old pipeline lost gradients and detail.
@@ -29,7 +29,7 @@ cfg_path = os.path.join(proj, "project.json")
 cfg = json.load(open(cfg_path, encoding="utf-8"))
 tl = json.load(open(os.path.join(proj, "timeline.json"), encoding="utf-8"))
 FPS = cfg["fps"]
-look = args.look or cfg.get("look", "cine_warm")
+look = args.look or cfg.get("look", "iphone")
 if args.look:
     cfg["look"] = look
     json.dump(cfg, open(cfg_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

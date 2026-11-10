@@ -1,6 +1,6 @@
 """Create a project folder for one source video: probe it, write project.json, extract the audio.
 
-python init_project.py SOURCE.mov PROJECT_DIR [--look cine_warm] [--language vi] [--prompt "..."]
+python init_project.py SOURCE.mov PROJECT_DIR [--look iphone] [--language vi] [--prompt "..."]
 """
 import argparse
 import json
@@ -10,7 +10,8 @@ import subprocess
 ap = argparse.ArgumentParser()
 ap.add_argument("source")
 ap.add_argument("project")
-ap.add_argument("--look", default="cine_warm", choices=["cine_warm", "teal_orange", "neutral"])
+ap.add_argument("--look", default="iphone", choices=["iphone", "cine_warm", "teal_orange", "neutral"],
+                help="iphone (default) keeps the camera's own colour; the others are film looks")
 ap.add_argument("--language", default="vi")
 ap.add_argument("--prompt", default="Cuộc trò chuyện về AI, công nghệ, kinh doanh và cuộc sống. ChatGPT, Claude, AI agent, automation.")
 ap.add_argument("--fps", type=int, default=0, help="output frame rate (default: source, capped at 30)")

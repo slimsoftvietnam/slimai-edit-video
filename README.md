@@ -2,7 +2,7 @@
 
 Agent skill cho Claude Code: dựng video nói chuyện, phỏng vấn, podcast thành bản dọc 9:16 cho TikTok và bản ngang HD cho YouTube, toàn bộ bằng code.
 
-Mỗi video có: màu phim, phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Skill cũng xuất thumbnail, phụ đề SRT và danh sách chương cho YouTube.
+Trước khi dựng, Claude gửi một ảnh lấy từ chính video của bạn với 4 kiểu màu và hỏi bạn chọn: màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính. Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Skill cũng xuất thumbnail, phụ đề SRT và danh sách chương cho YouTube.
 
 ## Cài đặt
 

@@ -137,7 +137,7 @@ Lay out inner content proportionally to `h`, adding `dy` to every y, because the
 - `arrow(c, x0, y, x1, prog, rgb, a)`, `draw_on_path(c, path, prog, paint)`, `dot(c, x, y, r, rgb, a)`, `strike(layer, t, t0, x0, x1, y, rgb, width, t1, dur)`.
 - `kicker(layer, t, t0, t1, text, x, y, size)`: tracked small caps line.
 - `takeaway(ctx, t, t0, line1, line2, chip_text, kick="TÓM LẠI")`: end card.
-- `icon(c, kind, x, y, s, rgb, a, sw=None, prog=1.0)` kinds: folder file box clock history branch shield robot user undo link code calendar list check cross warn star fork camera spark brain trash upload.
+- `icon(c, kind, x, y, s, rgb, a, sw=None, prog=1.0)` kinds: folder file box clock history branch shield robot user undo link code calendar list check cross warn star fork camera spark brain trash upload database browser chat.
 - `draw_text(layer, text, fnt, x, y, rgb, a, align, tracking, shadow, shadow_a, glow, glow_blur, glow_a, scale, per_char, gradient, outline)`, `font(kind, size)`, `text_width(text, fnt, tracking)`. Baseline-anchored. Font kinds: black xbold bold semi medium regular light italic serif_i serif_ib serif serif_b.
 - Helpers: `env(t, t0, t1, fade_in, fade_out)`, `clamp01`, `lerp`, `spring`, `ease_out_cubic`, `ease_in_out_cubic`, `ease_out_back`, `ease_out_expo`, `fill(rgb, a, blur)`, `stroke(rgb, a, width, blur, cap)`, `rrect`. Colours: WHITE AMBER GOLD CORAL MINT SKY INK.
 

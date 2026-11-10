@@ -325,8 +325,13 @@ def rrect(x0, y0, x1, y1, r):
 # speakers and shots
 # ----------------------------------------------------------------------------
 # face centre x, face centre y, head-top y (source px); head box keeps depth words off the other person
-FACE = {k: (float(v["face"][0]), float(v["face"][1]), float(v["head_top"])) for k, v in CFG["speakers"].items()}
-HEADBOX = {k: tuple(float(x) for x in v["box"]) for k, v in CFG["speakers"].items()}
+def _speaker_maps(speakers):
+    face = {k: (float(v["face"][0]), float(v["face"][1]), float(v["head_top"])) for k, v in speakers.items()}
+    box = {k: tuple(float(x) for x in v["box"]) for k, v in speakers.items()}
+    return face, box
+
+
+FACE, HEADBOX = _speaker_maps(CFG["speakers"])
 
 # (zoom, how far the speaker sits off-centre, vertical face position). Deliberately wide: the viewer
 # keeps both people in frame on 16:9 and never gets a tight face shot; a 1080p source stays crisp.
@@ -343,13 +348,43 @@ def _side(fx):
 
 
 SHOTS = {}
-for _k, (_fx, _fy, _t) in FACE.items():
-    for _n, (_z, _off, _sy) in _TABLE[FMT].items():
-        SHOTS[f"{_k}_{_n}"] = dict(spk=_k, z=_z, sx=0.5 + _off * _side(_fx), sy=_sy)
-    if FMT == "youtube":
-        SHOTS[f"TWO_{_k}"] = dict(spk=_k, z=1.0, cx=SRC_W / 2, cy=SRC_H / 2)
-    else:
-        SHOTS[f"TWO_{_k}"] = dict(SHOTS[f"{_k}_wide"])
+
+
+def _build_shots():
+    SHOTS.clear()
+    for k, (fx, _fy, _t) in FACE.items():
+        for n, (z, off, sy) in _TABLE[FMT].items():
+            SHOTS[f"{k}_{n}"] = dict(spk=k, z=z, sx=0.5 + off * _side(fx), sy=sy)
+        if FMT == "youtube":
+            SHOTS[f"TWO_{k}"] = dict(spk=k, z=1.0, cx=SRC_W / 2, cy=SRC_H / 2)
+        else:
+            SHOTS[f"TWO_{k}"] = dict(SHOTS[f"{k}_wide"])
+
+
+_build_shots()
+
+# A source joined from several recordings may have the camera nudged between them. project.json "takes"
+# (written by find_faces.py) holds speaker positions per take; render calls use_take() before each frame, and
+# FACE / HEADBOX / SHOTS are updated in place, so every module that imported them sees the current take.
+TAKES = [(float(t["start"]), float(t["end"]), dict(CFG["speakers"], **t["speakers"])) for t in CFG.get("takes", [])]
+_take = None
+
+
+def use_take(src_t):
+    """switch the speaker positions to the take that holds source second src_t."""
+    global _take
+    if not TAKES:
+        return
+    i = next((k for k, (a, b, _s) in enumerate(TAKES) if a <= src_t < b), len(TAKES) - 1 if src_t >= TAKES[-1][0] else 0)
+    if i == _take:
+        return
+    _take = i
+    face, box = _speaker_maps(TAKES[i][2])
+    FACE.clear()
+    FACE.update(face)
+    HEADBOX.clear()
+    HEADBOX.update(box)
+    _build_shots()
 
 
 def clamp_cam(cx, cy, z):
