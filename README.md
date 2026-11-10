@@ -2,7 +2,7 @@
 
 Agent skill cho Claude Code: dựng video nói chuyện, phỏng vấn, podcast thành bản dọc 9:16 cho TikTok và bản ngang HD cho YouTube, toàn bộ bằng code.
 
-Trước khi dựng, Claude gửi một ảnh lấy từ chính video của bạn với 4 kiểu màu và hỏi bạn chọn: màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính. Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Skill cũng xuất thumbnail, phụ đề SRT và danh sách chương cho YouTube.
+Trước khi dựng, Claude gửi một ảnh lấy từ chính video của bạn với 4 kiểu màu và hỏi bạn chọn: màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính. Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Skill cũng xuất thumbnail, phụ đề SRT, danh sách chương và bộ nội dung đăng YouTube: ba tiêu đề để YouTube thử xem tiêu đề nào giữ người xem lâu hơn, mô tả, thẻ và bình luận ghim. Từ khóa lấy từ gợi ý tìm kiếm của chính YouTube.
 
 ## Cài đặt
 
@@ -43,9 +43,9 @@ Trên laptop i5, video 2 phút từ nguồn 6 phút cần khoảng 1 giờ máy 
 | Thư mục | Nội dung |
 |---|---|
 | `SKILL.md` | Quy trình Claude làm theo |
-| `scripts/` | Toàn bộ code: màu phim, dựng hình, âm thanh, kiểm tra |
-| `references/` | Cẩm nang thiết kế, màu và độ nét, thông số nền tảng, các lỗi đã gặp |
-| `examples/` | Hai dự án thật: clip 40 giây và video 2 phút. Không kèm video nguồn |
+| `scripts/` | Toàn bộ code: màu phim, dựng hình, âm thanh, kiểm tra, từ khóa YouTube |
+| `references/` | Cẩm nang thiết kế, màu và độ nét, thông số nền tảng và cách soạn nội dung đăng YouTube, các lỗi đã gặp |
+| `examples/` | Hai dự án thật (clip 40 giây, video 2 phút) và một bộ nội dung đăng YouTube mẫu. Không kèm video nguồn |
 | `assets/` | Font và model tách người |
 
 ## Bên thứ ba

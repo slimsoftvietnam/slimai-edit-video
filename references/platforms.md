@@ -20,19 +20,37 @@ New uploads process in stages: low resolutions appear first. Tell the user not t
 
 ### Publishing kit
 
-Write these in the video's language, in one text file next to the video:
+Write the kit in the video's language as `NAME_YouTube_kit.txt` next to the video, with `=== ... ===` sections in this order: titles, description, tags, pinned comment, upload notes, notes. Check it with `scripts/youtube_meta.py measure`, then put the titles, description, tags and pinned comment in the reply as well, ready to paste. `examples/vibe-code/youtube_kit.txt` follows this section; `examples/repo-ai-agent/youtube_kit.txt` is an earlier kit, written when only one title could be used.
 
-- **Title** (three options, pick one): under about 60-70 characters, main search phrase first, an honest promise. Do not bait what the video does not deliver.
-- **Description**: the first two lines carry the search phrase and the hook, since they show before "more". Then what the viewer learns, in plain sentences with the keywords used naturally, chapters, one question to invite comments, three to five hashtags.
-- **Chapters**: start at 0:00, at least 3, each at least 10 s. `export_captions.py` writes and validates them from `YT_CHAPTERS`.
+YouTube does not publish how it ranks videos. What creator-tool sites reported by November 2026, all of them third party:
+
+- Test & Compare tests titles as well as thumbnails: up to three titles, or three title-and-thumbnail pairs, set up in YouTube Studio on a computer. The winner is the variant with the largest share of watch time, not of clicks, and a test runs for up to about two weeks. Shorts are not covered. Sources: [Search Engine Journal](https://www.searchenginejournal.com/youtube-title-a-b-testing-rolls-out-globally-to-creators/562571/), [vidIQ](https://vidiq.com/blog/post/youtube-launches-new-title-testing-tool), [Gyre](https://gyre.pro/blog/youtubes-new-title-ab-testing-tool-everything-creators-need-to-know), [ThumbnailTest](https://thumbnailtest.com/news/youtube-releases-title-test-compare/).
+- Distribution follows viewer satisfaction: watch time, likes, survey answers, "Not interested". A title that over-promises wins the click and loses the viewer, and the video is then shown less. The search phrase belongs at the start of the title and of the description; tags count for little. Sources: [OutlierKit](https://outlierkit.com/resources/youtube-viewer-satisfaction-algorithm-2026/), [SocialPilot](https://www.socialpilot.co/blog/youtube-algorithm), [Fluxnote](https://fluxnote.io/guides/youtube-algorithm-2026-how-it-works).
+
+**Keywords come first.** `youtube_meta.py suggest` prints YouTube's own search suggestions for the viewer's language and country, so they are phrases people actually type. Seed it with the topic, the topic plus "là gì" (or "what is" in the video's language), and the problem the video solves, such as "làm app bằng ai". Use a phrase only where the video covers it. Leave out a popular tool or brand that the video never names, however often people search for it: YouTube's spam policy treats it as misleading metadata, and the viewers it brings leave early. Put it in the notes as an idea for a later video.
+
+- **Titles**: three, each from a different angle, so that a test is worth running. Each starts with a phrase from the suggestions, stays under about 70 characters (`measure` counts them) and promises only what the video delivers. Angles that worked:
+  - the question the video itself asks in its first seconds, so viewers see the promise kept straight away: "Vibe code là gì mà ai cũng khoe tự làm được cả CRM?"
+  - the plain search answer, saying what the viewer gets and for whom: "Vibe code là gì? Hiểu trong 2 phút, kể cả khi không biết code"
+  - the other common phrasing of the keyword, or the result: "Vibe coding là gì? Nói ý tưởng bằng tiếng Việt, AI tự code, tự test"
+
+  Mark one as the default for a channel without the test, with a one-line reason.
+- **Description**: the first line holds the search phrase, its other common phrasing and the promise, all within about 100 characters, because search results and the watch page show little more before "more". Then the question the video opens with, what the viewer learns in plain sentences with each secondary phrase used once, the chapters, one question for the comments, a subscribe line, and three hashtags at the end (the first three show above the title). YouTube rejects `<` and `>` in titles and descriptions.
+- **Chapters**: start at 0:00, at least 3, each at least 10 s, with the same names as the chapter rail in the video. `export_captions.py` writes and validates them from `YT_CHAPTERS`.
 - **Captions**: upload the `.srt`. It has the corrected words, which also helps search.
-- **Tags**: few, including common misspellings and unaccented Vietnamese forms. They count for little, so don't over-invest.
-- **Thumbnail**: 1280x720, under 2 MB; two variants for Test & Compare if the channel has it. Three to five words, big, one face, a question or tension the title does not repeat.
-- **End screen**: the last 8 s keep the right half free. One suggested video and the Subscribe element.
-- **Pinned comment**: a concrete question that viewers can answer from their own experience.
-- **Playlist** with a keyword in its name, category, language.
-
-The worked example's kit is in `examples/repo-ai-agent/youtube_kit.txt`.
+- **Tags**: about fifteen: phrases from the suggestions, their unaccented Vietnamese forms and common misspellings. YouTube's 500-character limit counts the commas and the quotes it adds around a tag that contains a space; `measure` counts the same way.
+- **Thumbnails**: two, 1280x720, under 2 MB. Three to five words, big, one face, a question or tension that no title repeats. Render them from the master in the colour the user chose. If the colour changed after they were made, render them again under new names.
+- **Test plan**: round 1 tests the three titles with the thumbnail whose words appear in none of them; round 2 tests the two thumbnails under the winning title. Without the test, use the default title with that thumbnail.
+- **Pinned comment**: a question everyone can answer, not only people who have already done the thing, with one example answer so replying takes no effort.
+- **Upload notes**:
+  - the files: the master in the chosen colour, the `.srt`, the thumbnails;
+  - the test plan;
+  - the end screen: the last 8 s keep the right half free for one suggested video and the Subscribe element;
+  - a playlist with a keyword in its name, the category, the language;
+  - altered or synthetic content: "No" for cuts, captions, graphics, colour, sharpening and music written in code; "Yes" only when something realistic was made or changed, such as a real person saying what they did not, a real event or place altered, or a realistic scene that never happened;
+  - made for kids: no, unless the video is aimed at children;
+  - when to post: an hour or two before the peak in Analytics > Audience > "When your viewers are on YouTube";
+  - in the first hour: pin the comment, answer the first comments, and do not judge picture quality yet.
 
 ## TikTok
 

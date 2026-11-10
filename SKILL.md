@@ -1,6 +1,6 @@
 ---
 name: slimai-edit-video
-description: Edit a talking-head, interview, podcast or single-shot video into a premium, retention-driven vertical video (TikTok, Reels, Shorts) and/or horizontal HD video (YouTube), entirely in code. Keeps the phone's original colour by default (cinematic film looks on request), maximum sharpness, word-by-word captions, text standing behind the speaker, motion-graphics diagrams, picture-in-picture, code-written music and sound effects, thumbnails, SRT and chapters. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made cinematic or sharper, or turned into a TikTok or YouTube video, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic". Prefer it over ad-hoc ffmpeg commands for any edit longer than a simple trim.
+description: Edit a talking-head, interview, podcast or single-shot video into a premium, retention-driven vertical video (TikTok, Reels, Shorts) and/or horizontal HD video (YouTube), entirely in code. Keeps the phone's colour by default (film looks on request), maximum sharpness, word-by-word captions, text standing behind the speaker, motion-graphics diagrams, picture-in-picture, code-written music and sound effects, thumbnails, SRT, chapters and SEO titles and descriptions for YouTube. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made cinematic or sharper, or turned into a TikTok or YouTube video, or wants its YouTube title and description, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic", "soạn nội dung đăng youtube", "tối ưu seo youtube". Prefer it over ad-hoc ffmpeg for any edit beyond a simple trim.
 ---
 
 # SlimAI Edit Video
@@ -127,11 +127,13 @@ python <skill>/scripts/finish.py --project PROJECT --fmt tiktok PROJECT/render/t
 python <skill>/scripts/finish.py --project PROJECT --fmt youtube PROJECT/render/youtube.mp4 NAME_YouTube_HD --outdir OUTPUT
 python <skill>/scripts/export_captions.py --project PROJECT --fmt youtube NAME_YouTube --outdir OUTPUT
 python <skill>/scripts/thumbnail.py --project PROJECT --outdir OUTPUT
+python <skill>/scripts/youtube_meta.py suggest "TOPIC" "TOPIC là gì"
+python <skill>/scripts/youtube_meta.py measure OUTPUT/NAME_YouTube_kit.txt --keyword "TOPIC là gì"
 ```
 
 - `finish.py` prints PASS or FAIL for resolution, colour tags, pixel format, loudness and peak, and writes a 720p preview under 30 MB. Send previews with SendUserFile; the masters are too big, so give their paths. A FAIL means fix it, not report around it.
 - Thumbnails need a `thumbs.py` in the project; see the example. For a TikTok cover, take a `--stills` frame with the strongest depth word.
-- For YouTube, write title, description, tags and a pinned comment with `references/platforms.md`.
+- For YouTube, write the publishing kit as `references/platforms.md` describes: keywords from YouTube's own suggestions, three titles for Test & Compare, the description, tags, pinned comment and upload notes. Check it with `measure`, and put the parts the user will paste into the reply as well. Thumbnails come from the master in the colour the user chose.
 
 ### 10. Report honestly
 
@@ -154,6 +156,6 @@ These come from real feedback on real edits. The reasons matter when a new video
 
 - `references/design-playbook.md`: `design.py` structure, layers, components, safe zones, sound and music cues, recipes. Read before writing a design.
 - `references/look-and-sharpness.md`: how the film look and the sharpness chain work, how to tune them for new footage. Read when footage looks wrong or the user wants a different look.
-- `references/platforms.md`: delivery specs, upload settings, YouTube title and description checklist. Read before writing upload notes.
+- `references/platforms.md`: delivery specs, upload settings, and the YouTube publishing kit: keywords, titles for Test & Compare, description, tags. Read before writing the kit.
 - `references/gotchas.md`: hard-won failures of the toolchain. Read when something breaks.
-- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has a YouTube publishing kit.
+- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format.
