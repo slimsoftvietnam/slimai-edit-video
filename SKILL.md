@@ -1,9 +1,9 @@
 ---
-name: edit-video
+name: slimai-edit-video
 description: Edit a talking-head, interview, podcast or single-shot video into a premium, retention-driven vertical video (TikTok, Reels, Shorts) and/or horizontal HD video (YouTube), entirely in code. Gives cinematic film colour, maximum sharpness, word-by-word captions, text standing behind the speaker, motion-graphics diagrams, picture-in-picture, code-written music and sound effects, thumbnails, SRT and chapters. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made cinematic or sharper, or turned into a TikTok or YouTube video, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic". Prefer it over ad-hoc ffmpeg commands for any edit longer than a simple trim.
 ---
 
-# Edit Video
+# SlimAI Edit Video
 
 Turn one source video into finished deliverables through a code pipeline. One project and one `design.py` render both formats:
 

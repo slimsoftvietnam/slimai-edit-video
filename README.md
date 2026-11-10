@@ -1,4 +1,4 @@
-# edit-video
+# slimai-edit-video
 
 Agent skill cho Claude Code: dựng video nói chuyện, phỏng vấn, podcast thành bản dọc 9:16 cho TikTok và bản ngang HD cho YouTube, toàn bộ bằng code.
 
@@ -9,8 +9,8 @@ Mỗi video có: màu phim, phụ đề theo từng từ, chữ đứng sau ngư
 Cần Python 3.12 và ffmpeg có `libx264`, `zscale`, `lut3d` trong PATH.
 
 ```bash
-git clone https://github.com/slimsoftvietnam/edit-video.git ~/.claude/skills/edit-video
-cd ~/.claude/skills/edit-video
+git clone https://github.com/slimsoftvietnam/slimai-edit-video.git ~/.claude/skills/slimai-edit-video
+cd ~/.claude/skills/slimai-edit-video
 pip install -r requirements.txt
 python scripts/doctor.py
 ```
@@ -25,7 +25,7 @@ Nói với Claude Code, kèm đường dẫn video:
 Edit video này thành bản TikTok và YouTube: D:\Videos\phong-van.mov
 ```
 
-Hoặc gõ `/edit-video`. Claude nghe toàn bộ lời thoại, chọn câu chuyện, viết thiết kế cho video, soát ảnh tĩnh, rồi render và tự kiểm tra kết quả.
+Hoặc gõ `/slimai-edit-video`. Claude nghe toàn bộ lời thoại, chọn câu chuyện, viết thiết kế cho video, soát ảnh tĩnh, rồi render và tự kiểm tra kết quả.
 
 Trên laptop i5, video 2 phút từ nguồn 6 phút cần khoảng 1 giờ máy chạy. Quy trình chi tiết nằm trong [SKILL.md](SKILL.md).
 
