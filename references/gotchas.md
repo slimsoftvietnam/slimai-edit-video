@@ -24,6 +24,10 @@ Failures that actually happened, and what fixed them.
 - **Chips anchored to screen coordinates** landed on a face after a cut. On 16:9 use scene-locked `anc()` offsets.
 - **Ultra-short shot segments flicker**, so segments under 0.5 s merge into the previous one.
 - **Zero-length round-cap lines draw a dot.** Check the progress is above 0 before drawing an animated underline.
+- **A gap in the timeline used to fall back to the first clip.** The first trailer's black cards sat on silences between clips. There `clip_at()` returned clip 0, so the camera whipped to the other speaker in the middle of a card, and a render chunk or still that started in a gap showed the last clip's frame. Both now take the clip before the gap.
+- **A white flash at partial opacity reads as grey.** 175/255 over the black bars looked like a muddy fade. A flash is one pure white frame and one fading frame.
+- **Peak-normalised braams came out up to 6 dB apart.** With random phases, the peak of twenty detuned saws swings. `trailer_score.braam` sets the level from the RMS of the attack instead.
+- **White text on a bright sky disappears** at the top of a 9:16 frame. In the trailer, `top_fade()` darkens the room under the top bar, which is cheaper than a box behind every title.
 
 ## Colour
 

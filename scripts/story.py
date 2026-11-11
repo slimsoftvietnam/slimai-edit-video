@@ -39,6 +39,7 @@ PIP_T = 0.5
 
 TL = json.load(open(os.path.join(PROJECT, "timeline.json"), encoding="utf-8"))
 WORDS, CLIPS, DUR = TL["words"], TL["clips"], TL["duration"]
+GAPS = [tuple(g) for g in TL.get("gaps", [])]    # (t0, t1, beat): silences left for trailer title cards
 CL = [c["out_in"] for c in CLIPS]
 END_HOLD = float(CFG.get("end_hold", {}).get(FMT, P["end_hold"]))
 TOTAL = DUR + END_HOLD
@@ -58,6 +59,9 @@ KEYS = {}              # caption keyword -> (font kind, colour, size multiple)
 KEEP_CASE = {"github": "GitHub"}
 NO_BREAK = {"AI"}      # capitalised words that are not a sentence start, e.g. "Anh" in "tiếng Anh"
 CUES, EVENTS = [], []
+SCORE = []             # (time, kind, options): a trailer score instead of the composed music (trailer_score.py)
+PRE, POST = [], []     # fn(ctx, t) drawn before every event / after the captions (the trailer kit uses both)
+CAPTION_OFF = []       # fn(t) -> True while captions must stay hidden, e.g. under a black title card
 CCTV_T = [None, None]
 
 
@@ -82,10 +86,22 @@ def at(word, near, tol=1.6, end=False):
 
 
 def clip_at(t):
+    """the clip playing at t; inside a gap or the end hold, the clip before it."""
+    prev = CLIPS[0]
     for c in CLIPS:
         if c["out_in"] <= t < c["out_out"]:
             return c
-    return CLIPS[-1] if t >= CLIPS[-1]["out_in"] else CLIPS[0]
+        if c["out_in"] <= t:
+            prev = c
+    return prev
+
+
+def gap(beat):
+    """(t0, t1) of the silence select.json left after the clip with this beat ("gap_after")."""
+    for (g0, g1, b) in GAPS:
+        if b == beat:
+            return g0, g1
+    raise KeyError(f"no gap after {beat}: add \"gap_after\" to that clip in select.json")
 
 
 def shot_at(t):
@@ -105,6 +121,11 @@ def z_max(t0, t1):
 
 def cue(t, kind, gain=1.0, **kw):
     CUES.append((round(float(t), 3), kind, gain, kw))
+
+
+def score(kind, t, **kw):
+    """one event of a trailer score (kinds and options: trailer_score.py). Any event replaces the composed music."""
+    SCORE.append((round(float(t), 3), kind, kw))
 
 
 def ev(t0, t1):
@@ -490,6 +511,8 @@ def chapter_rail(ctx, t):
 # ----------------------------------------------------------------------------
 def draw(ctx, t):
     ctx.cap_y = CAP_Y
+    for fn in PRE:
+        fn(ctx, t)
     for (t0, t1, fn) in EVENTS:
         if t0 - 0.05 <= t <= t1 + 0.05:
             fn(ctx, t)
@@ -499,10 +522,13 @@ def draw(ctx, t):
         ctx.front.mark(x0, y0, x1, y1, pad=6)
     if P["rail"]:
         chapter_rail(ctx, t)
-    draw_captions(ctx, t)
+    if not any(off(t) for off in CAPTION_OFF):
+        draw_captions(ctx, t)
     for tl in LEAKS:
         if tl - 0.05 <= t <= tl + 0.75:
             ctx.leak = (clamp01((t - tl) / 0.7), 0.42)
+    for fn in POST:
+        fn(ctx, t)
 
 
 # ----------------------------------------------------------------------------

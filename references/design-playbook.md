@@ -53,8 +53,11 @@ Registries:
 | `LABELS` | `(t, "02", "title")` | chapter rail (YouTube only) |
 | `YT_CHAPTERS` | `(t, "title")` | description chapters: starts at 0:00, at least 3, each at least 10 s |
 | `MUSIC` | `drop`, `sections`, `stops`, `bpm`, `transpose`, `tail` | see section 7 |
+| `SCORE` (via `score(kind, t, ...)`) | trailer sounds | replaces the composed music; `references/trailer.md` |
+| `PRE`, `POST` | `fn(ctx, t)` | drawn before every event / after the captions (the trailer kit uses them) |
+| `CAPTION_OFF` | `fn(t) -> bool` | hides the captions while true, e.g. under a black card |
 
-Whip pans, rail pops and PiP whooshes are automatic.
+Whip pans, rail pops and PiP whooshes are automatic. `gap(beat)` returns the silence select.json's `gap_after` left after that clip; through it the camera holds the shot before it.
 
 ## 2. Coordinates and the camera
 

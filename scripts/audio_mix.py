@@ -2,6 +2,8 @@
 
 python audio_mix.py --project P --fmt tiktok|youtube
 Outputs in P/audio_<fmt>/: voice_raw.wav voice.wav music.wav sfx.wav mix_pre.wav final_audio.wav (-14 LUFS)
+A design that registers story.score() events gets that trailer score (trailer_score.py) instead of the
+composed music, mixed as three stems (also hits.wav, perc.wav) with a limiter before the loudness pass.
 """
 import argparse
 import json
@@ -159,11 +161,25 @@ def sfx_swipe(vel=1.0):
     return ae.sfx_whoosh(length=0.3, direction=1, vel=vel, low=1800, high=9500)
 
 
+def sfx_typing(length):
+    """fast keystrokes for `length` s (a prompt typing itself)."""
+    rng = np.random.default_rng(5)
+    n = int((length + 0.1) * SR)
+    y = np.zeros(n, np.float32)
+    t = 0.0
+    while t < length:
+        k = ae.sfx_tick(rng.uniform(0.45, 0.9), rng.uniform(1700, 3100))
+        s = int(t * SR)
+        y[s:s + len(k)] += k[: n - s]
+        t += rng.uniform(0.035, 0.075)
+    return y
+
+
 def render_sfx(total):
     buf = np.zeros((total, 2), np.float32)
     base = {"whoosh": -15, "pop": -17, "tick": -21, "impact": -11, "swipe": -16, "shimmer": -20,
             "ding": -21, "glitch": -21, "rewind": -14, "connect": -17, "click": -15, "beep": -17,
-            "shutter": -16, "pluck": -14, "swell": -17}
+            "shutter": -16, "pluck": -14, "swell": -17, "typing": -12}
     for (t, kind, gain, kw) in D.CUES:
         if kind == "whoosh":
             x = ae.sfx_whoosh(length=kw.get("length", 0.5), direction=kw.get("direction", 1))
@@ -198,6 +214,8 @@ def render_sfx(total):
         elif kind == "pluck":
             x = ae.pluck_note(ae.hz(kw.get("note", 74)), 1.0, 1.6)
             x = ae.reverb(x, IR, 0.3)
+        elif kind == "typing":
+            x = sfx_typing(kw.get("until", t + 1.5) - t)
         else:
             continue
         g = db_to_gain(base[kind]) * gain / max(1e-6, np.abs(x).max())
@@ -245,7 +263,61 @@ def lufs(path):
     return None
 
 
+def loudnorm(src, dst, tp=-1.2, lra=11):
+    """two-pass loudnorm to -14 LUFS."""
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", src, "-af", f"loudnorm=I=-14:TP={tp}:LRA={lra}:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True)
+    js = r.stderr[r.stderr.rfind("{"):r.stderr.rfind("}") + 1]
+    m = json.loads(js)
+    af = (f"loudnorm=I=-14:TP={tp}:LRA={lra}:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+          f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:"
+          f"linear=true:print_format=summary")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af", af, "-ar", "48000", "-c:a", "pcm_s24le", dst], check=True)
+
+
+def main_score():
+    """trailer cut: the score registered with story.score() replaces the composed music (trailer_score.py)."""
+    import trailer_score
+    total = int(round(D.TOTAL * SR))
+    voice = build_voice()[:total]
+    if len(voice) < total:
+        voice = np.pad(voice, (0, total - len(voice)))
+    sfx = render_sfx(total)
+    wr(os.path.join(OUT, "sfx.wav"), sfx)
+    music, hits, perc, light = trailer_score.render(D.SCORE, D.TOTAL)
+    stems = {}
+    for name, x, target in (("music", music, -21.0), ("hits", hits, -17.5), ("perc", perc, -27.0)):
+        x = x[:total]
+        if len(x) < total:
+            x = np.pad(x, ((0, total - len(x)), (0, 0)))
+        p = os.path.join(OUT, f"{name}.wav")
+        wr(p, x)
+        lv_ = lufs(p) if np.abs(x).max() > 0 else None
+        stems[name] = x * db_to_gain(target - lv_) if lv_ is not None else x
+        print(f"{name} {lv_ if lv_ is None else round(lv_, 1)} -> {target} LUFS")
+    lv = lufs(os.path.join(OUT, "voice.wav"))
+    voice = voice * db_to_gain(-16.0 - lv)
+    print(f"voice {lv:.1f} -> -16 LUFS")
+    # the music dips under the voice, less while a drive plays (it has to be felt); hits and perc stay whole
+    act = smooth(np.clip((envelope_db(voice) + 46) / 16, 0, 1), 0.04, 0.4)
+    depth = np.full(total, -9.0)
+    for (a, b) in light:
+        depth[int(a * SR):int(b * SR)] = -5.5
+    mix = np.stack([voice, voice], axis=1) + stems["music"] * db_to_gain(depth * act)[:, None] + stems["hits"] \
+        + stems["perc"] + sfx
+    pre = os.path.join(OUT, "mix_pre.wav")
+    wr(pre, mix * 0.8)
+    # braams and booms are far above the speech peaks: limit them first, so loudnorm can stay linear
+    lim = os.path.join(OUT, "mix_lim.wav")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", pre, "-af", "alimiter=limit=0.7:attack=3:release=90:level=false",
+                    "-c:a", "pcm_f32le", lim], check=True)
+    loudnorm(lim, os.path.join(OUT, "final_audio.wav"), tp=-1.5, lra=14)
+    print("final", lufs(os.path.join(OUT, "final_audio.wav")), "LUFS")
+
+
 def main():
+    if D.SCORE:
+        return main_score()
     total = int(round(D.TOTAL * SR))
     voice = build_voice()[:total]
     if len(voice) < total:
@@ -280,17 +352,7 @@ def main():
     mix = vox + music_d + sfx
     pre = os.path.join(OUT, "mix_pre.wav")
     wr(pre, mix * 0.9)
-    # final loudness: -14 LUFS, -1 dBTP (two-pass loudnorm)
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", pre, "-af",
-                        "loudnorm=I=-14:TP=-1.2:LRA=11:print_format=json", "-f", "null", "-"],
-                       capture_output=True, text=True)
-    js = r.stderr[r.stderr.rfind("{"):r.stderr.rfind("}") + 1]
-    m = json.loads(js)
-    af = (f"loudnorm=I=-14:TP=-1.2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
-          f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:"
-          f"linear=true:print_format=summary")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", pre, "-af", af, "-ar", "48000", "-c:a", "pcm_s24le",
-                    os.path.join(OUT, "final_audio.wav")], check=True)
+    loudnorm(pre, os.path.join(OUT, "final_audio.wav"))     # -14 LUFS, -1.2 dBTP
     print("final", lufs(os.path.join(OUT, "final_audio.wav")), "LUFS")
 
 

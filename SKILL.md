@@ -1,6 +1,6 @@
 ---
 name: slimai-edit-video
-description: Edit a talking-head, interview, podcast or single-shot video into a premium, retention-driven vertical video (TikTok, Reels, Shorts) and/or horizontal HD video (YouTube), entirely in code. Keeps the phone's colour by default (film looks on request), maximum sharpness, word-by-word captions, text standing behind the speaker, motion-graphics diagrams, picture-in-picture, code-written music and sound effects, thumbnails, SRT, chapters and SEO titles and descriptions for YouTube. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made cinematic or sharper, or turned into a TikTok or YouTube video, or wants its YouTube title and description, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic", "soạn nội dung đăng youtube", "tối ưu seo youtube". Prefer it over ad-hoc ffmpeg for any edit beyond a simple trim.
+description: Edit a talking-head, interview or podcast video into a retention-driven vertical (TikTok, Reels, Shorts) or horizontal HD (YouTube) video, entirely in code, in a style picked from a demo (standard, or film trailer with a twist). Phone colour by default (film looks on request), maximum sharpness, word-by-word captions, text behind the speaker, motion graphics, picture-in-picture, code-written music and SFX, thumbnails, SRT, chapters, YouTube SEO titles and descriptions. Use this skill whenever the user hands over a video file and wants it edited, cut, captioned, colour graded, made sharper, or turned into a TikTok, YouTube video or trailer, or wants its YouTube title and description, even if they only say "edit video này", "dựng video", "làm video dọc", "làm video ngang", "cắt thành tiktok", "làm cho youtube", "làm kiểu trailer phim", "chỉnh màu phim", "làm nét hơn", "thêm phụ đề", "thêm motion graphic", "soạn nội dung đăng youtube", "tối ưu seo youtube". Prefer it over ad-hoc ffmpeg beyond a simple trim.
 ---
 
 # SlimAI Edit Video
@@ -18,9 +18,10 @@ HD is what the user wants for YouTube. Render 4K (`--ss 2`, CRF 18) only if they
 
 ## Before starting
 
-Run `python <skill>/scripts/doctor.py` once per machine; missing packages are in `<skill>/requirements.txt`, and Whisper downloads its model (about 1.5 GB) on first use, so ask before installing or downloading. Then settle three things:
+Run `python <skill>/scripts/doctor.py` once per machine; missing packages are in `<skill>/requirements.txt`, and Whisper downloads its model (about 1.5 GB) on first use, so ask before installing or downloading. Then settle four things:
 
 - **Formats**: both unless the user names one. Do not ask.
+- **Style**: always ask, with a demo, together with the colour, as step 1 describes, unless the request already names a style ("làm kiểu trailer phim"). The default is the standard edit. A trailer is made for TikTok; offer the 16:9 version only if they ask.
 - **Colour**: always ask, with a preview, as step 1 describes, unless the request already says which colour. The default is `iphone`, the colour the phone recorded with no grade and no film grain, halation, vignette or light leaks.
 - **Project folder**: `<working dir>/projects/<slug>`. Deliverables go to `<working dir>/output`. Never overwrite an earlier deliverable; use a new name. Do not ask.
 
@@ -32,13 +33,25 @@ Set expectations on time. On an i5 laptop a 2-minute edit from a 6-minute source
 
 ```bash
 python <skill>/scripts/init_project.py SOURCE PROJECT --language vi --prompt "Cuộc trò chuyện về Claude Cowork, ChatGPT Work và GitHub."
-python <skill>/scripts/transcribe.py PROJECT                 # start in the background, then ask about colour
+python <skill>/scripts/transcribe.py PROJECT                 # start in the background, then ask style and colour
 python <skill>/scripts/look_preview.py PROJECT PROJECT/look_choices.jpg
 python <skill>/scripts/find_faces.py PROJECT --names M,W
+python <skill>/scripts/style_preview.py PROJECT PROJECT/style_choices.jpg
 python <skill>/scripts/speaker_hints.py PROJECT
 ```
 
-**Ask about colour on every new video**, unless the request already says which. Send `look_choices.jpg` (one frame of their video in all four looks) with SendUserFile, then ask one AskUserQuestion: "Bạn muốn video giữ màu nào? (xem ảnh 4 kiểu màu vừa gửi)", header "Màu video". Offer exactly these options, in this order: the default first, then at most three alternatives.
+**Ask about style and colour on every new video**, unless the request already says which. Send `style_choices.jpg` (one frame of their video drawn in each style, three frames per style) and `look_choices.jpg` (the same video in all four looks) with SendUserFile, then ask one AskUserQuestion with two questions. Leave out a question the request has already answered. If they want to see a style in motion, send the preview of an earlier edit in that style when one exists in the output folder.
+
+Style: "Bạn muốn dựng theo phong cách nào? (xem ảnh minh họa vừa gửi)", header "Phong cách". Offer these options in this order, the default first:
+
+| Label | Description | What it changes |
+|---|---|---|
+| Tiêu chuẩn (mặc định) | Nhịp nhanh, chữ đứng sau người nói, sơ đồ motion graphic, phụ đề từng chữ, nhạc nền nhẹ; ra cả bản dọc và ngang | the workflow below as written |
+| Trailer phim | Mở bằng câu hỏi, màn đen chèn chữ, trống dồn, im lặng trước khi lật bài, twist ở cuối; 45-60 giây, cho TikTok | read `references/trailer.md` before step 2 |
+
+If the user describes a style of their own, use the closest one or mix them (trailer cards inside a standard edit, say), and tell them what you did. If there is no clear answer, use the standard edit. A new style needs a row here, a reference file and frames in `style_preview.py`.
+
+Colour: "Bạn muốn video giữ màu nào? (xem ảnh 4 kiểu màu vừa gửi)", header "Màu video". Offer exactly these options, in this order: the default first, then at most three alternatives.
 
 | Label | `--look` | Description |
 |---|---|---|
@@ -61,7 +74,7 @@ Read the whole transcript before cutting. This is the step that decides whether 
 - **One throughline.** Each clip either raises a question or answers one. Cut setup, repetition and asides, even good ones. A 6.5-minute talk became 2 minutes in the worked example.
 - **Fix what Whisper misheard** in `fixes`. For a doubtful passage, re-listen: `transcribe.py PROJECT --range a b --prompt "expected words"`. Captions with wrong words read as careless, so check names and jargon especially.
 
-Schema and field meanings are at the top of `scripts/build_timeline.py`; see `examples/repo-ai-agent/select.json`.
+Schema and field meanings are at the top of `scripts/build_timeline.py`; see `examples/repo-ai-agent/select.json`. A trailer has a shape of its own (hook, the old way, the turn, the reveal, the escalation, the twist and the title) and leaves silences for its black cards with `gap_after`; see `references/trailer.md` and `examples/vibe-code-trailer/select.json`.
 
 ```bash
 python <skill>/scripts/build_timeline.py PROJECT      # -> timeline.json, words.txt
@@ -80,7 +93,7 @@ Rerun both after any change to the selected clips (`matte.py` skips frames it al
 
 ### 4. Design once for both formats: `design.py`
 
-Read `references/design-playbook.md` before writing it. Copy the shape of `examples/cowork-40s/design.py`, which is short enough to read in one go; `examples/repo-ai-agent/design.py` shows many more recipes on a 2-minute edit. Format differences go through `pick(youtube, tiktok)` and `place(ctx, yt, tk)`, so there is a single story and no second file to keep in sync.
+Read `references/design-playbook.md` before writing it. Copy the shape of `examples/cowork-40s/design.py`, which is short enough to read in one go; `examples/repo-ai-agent/design.py` shows many more recipes on a 2-minute edit. Format differences go through `pick(youtube, tiktok)` and `place(ctx, yt, tk)`, so there is a single story and no second file to keep in sync. A trailer adds `from trailer import *` (curtain cards, flash frames, the dimmed room, the typed prompt, the title slam) and registers its score with `score()`; copy the shape of `examples/vibe-code-trailer/design.py`.
 
 ### 5. Review stills, fix, repeat
 
@@ -100,7 +113,7 @@ python <skill>/scripts/audio_mix.py --project PROJECT --fmt tiktok
 python <skill>/scripts/audio_mix.py --project PROJECT --fmt youtube
 ```
 
-Rerun after any change to cues, music sections or the timeline. You cannot hear the mix, so tell the user that and ask them to listen for level and taste. The numbers (`-14 LUFS`, peak) are checked by `finish.py`.
+Rerun after any change to cues, music sections or the timeline. A design with `score()` events gets the trailer score instead of the composed music. You cannot hear the mix, so tell the user that and ask them to listen for level and taste. The numbers (`-14 LUFS`, peak) are checked by `finish.py`.
 
 ### 7. Render
 
@@ -157,5 +170,6 @@ These come from real feedback on real edits. The reasons matter when a new video
 - `references/design-playbook.md`: `design.py` structure, layers, components, safe zones, sound and music cues, recipes. Read before writing a design.
 - `references/look-and-sharpness.md`: how the film look and the sharpness chain work, how to tune them for new footage. Read when footage looks wrong or the user wants a different look.
 - `references/platforms.md`: delivery specs, upload settings, and the YouTube publishing kit: keywords, titles for Test & Compare, description, tags. Read before writing the kit.
+- `references/trailer.md`: the trailer style: its shape, cards and gaps, the twist, the kit and the score. Read before cutting a trailer.
 - `references/gotchas.md`: hard-won failures of the toolchain. Read when something breaks.
-- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format.
+- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format. `examples/vibe-code-trailer/` is a 55 s TikTok trailer (`select.json`, `design.py`).

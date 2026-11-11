@@ -1,0 +1,31 @@
+{
+ "note": "Trailer cut for TikTok (references/trailer.md): gap_after = seconds of silence after the clip, for a black title card.",
+ "clips": [
+  {"a": 1.36, "b": 4.62, "spk": "W", "beat": "hook", "shot": "wide"},
+  {"a": 5.34, "b": 6.72, "spk": "W", "beat": "crm", "shot": "med"},
+  {"a": 7.56, "b": 9.74, "spk": "W", "beat": "question", "shot": "wide", "gap_after": 1.0},
+  {"a": 63.9, "b": 67.0, "spk": "M", "beat": "s1_idea", "shot": "med"},
+  {"a": 68.5, "b": 71.0, "spk": "M", "beat": "s2_spec", "shot": "wide"},
+  {"a": 72.58, "b": 73.84, "spk": "M", "beat": "s3_wire", "shot": "close"},
+  {"a": 79.12, "b": 80.6, "spk": "M", "beat": "s4_ui", "shot": "med"},
+  {"a": 82.58, "b": 84.08, "spk": "M", "beat": "s5_code", "shot": "wide"},
+  {"a": 88.88, "b": 90.52, "spk": "M", "beat": "s6_fb", "shot": "close"},
+  {"a": 116.98, "b": 118.75, "spk": "M", "beat": "s7_test", "shot": "med"},
+  {"a": 119.44, "b": 120.5, "spk": "M", "beat": "s8_user", "shot": "close"},
+  {"a": 126.8, "b": 130.55, "spk": "M", "beat": "loop", "shot": "wide", "gap_after": 1.6},
+  {"a": 25.06, "b": 30.0, "spk": "M", "beat": "origin", "shot": "med"},
+  {"a": 130.62, "b": 132.8, "spk": "M", "beat": "ask", "shot": "close", "gap_after": 0.35},
+  {"a": 133.04, "b": 135.6, "spk": "M", "beat": "reveal", "shot": "med"},
+  {"a": 138.28, "b": 139.4, "spk": "M", "beat": "idea", "shot": "med", "gap_after": 1.1},
+  {"a": 145.04, "b": 146.65, "spk": "M", "beat": "viet", "shot": "close"},
+  {"a": 160.46, "b": 162.65, "spk": "M", "beat": "ai", "shot": "wide"},
+  {"a": 175.72, "b": 178.1, "spk": "M", "beat": "selftest", "shot": "med"},
+  {"a": 179.3, "b": 180.75, "spk": "M", "beat": "result", "shot": "close"}
+ ],
+ "fixes": [
+  [3.28, "Vive", "vibe"], [3.56, "Code", "code"], [5.34, "tậm", "thậm"], [5.84, "Vive", "vibe"], [6.0, "Code", "code"],
+  [6.36, "SIRM,", "CRM,"], [8.22, "suốt", "rốt"], [8.44, "buộc", "cuộc"], [8.84, "Vive", "vibe"], [9.08, "Code", "code"],
+  [69.94, "tạ", "tả"], [73.12, "wide", "wireframe,"], [73.44, "frame,", ""], [79.98, "uiux,", "UI/UX,"], [120.6, "v...v...v...", ""],
+  [133.34, "trượt", "triệt"]
+ ]
+}

@@ -8,6 +8,8 @@ select.json:
    "fixes": [[52.80, "biết", "viết"], [348.14, "nã", ""], ...]}
   a / b: first word start and last word end (source seconds, from transcript.json), order = story order.
   shot: wide | med | close. hard: exact in/out overriding the automatic refinement.
+  gap_after: seconds of silence after the clip, for a black title card in a trailer cut (references/trailer.md);
+  timeline.json lists them under "gaps" as [t0, t1, beat].
   fixes: (approx source time, heard word, correct word); "" deletes a word from the captions.
 """
 import json
@@ -117,11 +119,15 @@ for c_ in sel["clips"]:
     hard = c_.get("hard", {})
     ra = hard.get("a", refine_start(a, word_bounds(a, "prev")))
     rb = hard.get("b", refine_end(b, word_bounds(b, "next")))
+    n0 = len(clips)
     for k, (x, y) in enumerate(split_pauses(ra, rb)):
         clips.append({"src_in": round(x, 3), "src_out": round(y, 3), "spk": c_["spk"], "beat": c_.get("beat", ""),
                       "shot": f"{c_['spk']}_{c_.get('shot', 'med')}", "first_of_sel": k == 0})
+    if c_.get("gap_after") and len(clips) > n0:
+        clips[-1]["gap_after"] = float(c_["gap_after"])
 
 t_out = 0.0
+gaps = []
 for c in clips:
     nfrm = max(3, int(round((c["src_out"] - c["src_in"]) * FPS)))
     c["src_out"] = round(c["src_in"] + nfrm / FPS, 4)
@@ -129,6 +135,11 @@ for c in clips:
     c["frames"] = nfrm
     t_out += nfrm / FPS
     c["out_out"] = round(t_out, 4)
+    g = c.pop("gap_after", 0.0)
+    if g:     # silence for a title card; words after it move along, since they are mapped through the clips
+        n = int(round(g * FPS))
+        gaps.append([c["out_out"], round(t_out + n / FPS, 4), c["beat"]])
+        t_out += n / FPS
 
 
 def src_to_out(t):
@@ -170,9 +181,11 @@ for c in clips:
                       "e": round(max(e_, s_ + 0.06), 3), "spk": c["spk"], "beat": c["beat"]})
 words.sort(key=lambda d: d["s"])
 
-json.dump({"fps": FPS, "duration": round(t_out, 4), "clips": clips, "words": words},
+json.dump({"fps": FPS, "duration": round(t_out, 4), "clips": clips, "words": words, "gaps": gaps},
           open(os.path.join(proj, "timeline.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print(f"{len(clips)} sub-clips, duration {t_out:.2f}s")
+for g in gaps:
+    print(f"  gap after {g[2]}: {g[0]:.2f} - {g[1]:.2f}")
 beats = {}
 for c in clips:
     beats.setdefault(c["beat"], [c["out_in"], c["out_out"]])

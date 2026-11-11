@@ -457,7 +457,8 @@ def render_range(f0, f1, out_path, log_every=150):
             last_frame, last_src = frame, src_f
         else:
             if last_frame is None:
-                c = CLIPS[-1]
+                # a chunk that starts in a gap (a trailer card) or in the end hold: freeze the clip before it
+                c = D.clip_at(t)
                 rd = E.ClipReader(c["src_f0"] + c["frames"] - 1, 1)
                 last_frame = rd.next()
                 rd.close()
@@ -491,7 +492,7 @@ def stills(outdir, times):
     for t in times:
         f = int(round(t * FPS))
         ci = clip_index_for_frame(f)
-        c = CLIPS[ci] if ci is not None else CLIPS[-1]
+        c = CLIPS[ci] if ci is not None else D.clip_at(f / FPS)
         src_f = c["src_f0"] + (f - c["out_f0"]) if ci is not None else c["src_f0"] + c["frames"] - 1
         rd = E.ClipReader(src_f, 1)
         frame = rd.next()
