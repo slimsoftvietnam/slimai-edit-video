@@ -1,11 +1,13 @@
 """Graded master holding only the frames the edit uses (source order) + master_index.json.
 
-python build_master.py PROJECT [--crf 6] [--no-denoise] [--look iphone]
+python build_master.py PROJECT [--crf 6] [--denoise | --no-denoise] [--look iphone]
 
 Quality path: 10-bit source -> float RGB -> film LUT (float, tetrahedral) -> near-lossless 4:4:4.
 There is no 8-bit step before the grade, which is where the old pipeline lost gradients and detail.
-Temporal denoise runs first: a static shot has no real frame-to-frame change, so removing the codec's
-"boil" costs no detail and gives the sharpening pass and the platform encoder cleaner input.
+The "iphone" look on an HLG source skips the LUT: film_look.iphone_vf() decodes and tone-maps it in ffmpeg.
+A film look runs a temporal denoise first: a static shot has no real frame-to-frame change, so removing the
+codec's "boil" gives the sharpening pass and the platform encoder cleaner input. The "iphone" look keeps the
+picture as the phone recorded it, so it skips the denoise unless --denoise asks for it.
 """
 import argparse
 import json
@@ -21,6 +23,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("project")
 ap.add_argument("--crf", type=float, default=6)
 ap.add_argument("--no-denoise", action="store_true")
+ap.add_argument("--denoise", action="store_true", help="temporal denoise even for the iphone look")
 ap.add_argument("--look", default=None)
 args = ap.parse_args()
 
@@ -34,8 +37,11 @@ if args.look:
     cfg["look"] = look
     json.dump(cfg, open(cfg_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 transfer = cfg["transfer"]
+rin = "full" if cfg.get("color_range") == "pc" else "limited"
+natural = film_look.iphone_vf(transfer, rin, out_range="limited", dither=True) if look == "iphone" else None
 lut = f"look_{look}_{transfer}.cube"
-film_look.write_cube(os.path.join(proj, lut), look, transfer)
+if not natural:
+    film_look.write_cube(os.path.join(proj, lut), look, transfer)
 
 ranges = sorted((int(round(c["src_in"] * FPS)), int(round(c["src_in"] * FPS)) + c["frames"]) for c in tl["clips"])
 merged = []
@@ -51,12 +57,15 @@ for a, b in merged:
 sel = "+".join(f"between(n,{a},{b - 1})" for a, b in merged)
 
 matrix = "2020_ncl" if transfer in ("hlg", "pq") else "709"
-rin = "full" if cfg.get("color_range") == "pc" else "limited"
-den = "" if args.no_denoise else "atadenoise=0a=0.015:0b=0.03:1a=0.015:1b=0.03:2a=0.015:2b=0.03:s=7,"
-vf = (f"fps={FPS},select='{sel}',setpts=N/{FPS}/TB,{den}"
-      f"zscale=filter=lanczos:min={matrix}:rin={rin}:r=full,format=gbrpf32le,"
-      f"lut3d=file={lut}:interp=tetrahedral,"
-      "zscale=m=709:r=limited:d=error_diffusion,format=yuv444p,"
+denoise = args.denoise or (look != "iphone" and not args.no_denoise)
+den = "atadenoise=0a=0.015:0b=0.03:1a=0.015:1b=0.03:2a=0.015:2b=0.03:s=7," if denoise else ""
+if natural:
+    grade = natural + ",format=yuv444p,"
+else:
+    grade = (f"zscale=filter=lanczos:min={matrix}:rin={rin}:r=full,format=gbrpf32le,"
+             f"lut3d=file={lut}:interp=tetrahedral,"
+             "zscale=m=709:r=limited:d=error_diffusion,format=yuv444p,")
+vf = (f"fps={FPS},select='{sel}',setpts=N/{FPS}/TB,{den}{grade}"
       "setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709")
 t0 = time.time()
 cmd = ["ffmpeg", "-v", "error", "-stats", "-y", "-i", cfg["source"], "-an", "-vf", vf, "-fps_mode", "passthrough",

@@ -104,6 +104,29 @@ def gap(beat):
     raise KeyError(f"no gap after {beat}: add \"gap_after\" to that clip in select.json")
 
 
+def beat_start(beat):
+    """output time where the first clip with this beat starts."""
+    return min(c["out_in"] for c in CLIPS if c["beat"] == beat)
+
+
+def beat_end(beat):
+    """output time where the last clip with this beat ends."""
+    return max(c["out_out"] for c in CLIPS if c["beat"] == beat)
+
+
+def word_in(beat, word, n=1):
+    """output time of the n-th `word` spoken inside the clips of `beat`. Unlike at(), it needs no guessed time, so
+    the anchors survive any change to the cut. An exact match wins over a prefix ("là" must not land on "làm")."""
+    a, b = beat_start(beat), beat_end(beat)
+    key = _norm(word)
+    inside = [w for w in WORDS if a - 1e-3 <= w["s"] < b]
+    hits = [w["s"] for w in inside if _norm(w["w"]) == key]
+    hits = hits or [w["s"] for w in inside if _norm(w["w"]).startswith(key)]
+    if len(hits) < n:
+        raise KeyError(f"word_in: '{word}' #{n} not in beat '{beat}' ({len(hits)} found)")
+    return hits[n - 1]
+
+
 def shot_at(t):
     for (a, b, s) in SHOT_OVERRIDES:
         if a <= t < b:

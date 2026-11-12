@@ -1,0 +1,30 @@
+{
+ "note": "Trailer cut for TikTok (references/trailer.md): gap_after = seconds of silence after the clip, for a black title card or a held beat. Shots stay wide or medium: the vertical is already a 1.78x blow-up of this 1080p source.",
+ "clips": [
+  {"a": 3.30, "b": 8.04, "spk": "W", "beat": "hook", "shot": "wide"},
+  {"a": 15.84, "b": 21.06, "spk": "M", "beat": "latin", "shot": "wide"},
+  {"a": 29.60, "b": 32.96, "spk": "M", "beat": "meaning", "shot": "wide"},
+  {"a": 44.50, "b": 51.76, "spk": "M", "beat": "power", "shot": "wide", "gap_after": 1.0},
+  {"a": 58.20, "b": 62.88, "spk": "W", "beat": "q_daily", "shot": "wide", "gap_after": 0.9},
+  {"a": 70.96, "b": 74.78, "spk": "M", "beat": "m_ask", "shot": "wide"},
+  {"a": 77.30, "b": 80.60, "spk": "M", "beat": "m_copy", "shot": "wide"},
+  {"a": 82.54, "b": 85.84, "spk": "M", "beat": "m_send", "shot": "wide"},
+  {"a": 87.46, "b": 89.38, "spk": "M", "beat": "you", "shot": "wide"},
+  {"a": 91.30, "b": 97.80, "spk": "M", "beat": "edit", "shot": "wide"},
+  {"a": 98.74, "b": 100.30, "spk": "M", "beat": "off", "shot": "wide"},
+  {"a": 100.30, "b": 102.24, "spk": "M", "beat": "think", "shot": "wide", "gap_after": 0.4},
+  {"a": 102.40, "b": 104.94, "spk": "M", "beat": "twist", "shot": "wide"},
+  {"a": 111.78, "b": 114.02, "spk": "W", "beat": "q_real", "shot": "wide"},
+  {"a": 133.12, "b": 135.82, "spk": "M", "beat": "act", "shot": "wide"},
+  {"a": 135.82, "b": 139.28, "spk": "M", "beat": "excel", "shot": "wide"},
+  {"a": 139.62, "b": 141.88, "spk": "M", "beat": "email", "shot": "wide"},
+  {"a": 145.68, "b": 153.90, "spk": "M", "beat": "mcp", "shot": "wide"},
+  {"a": 164.34, "b": 173.42, "spk": "M", "beat": "analogy", "shot": "wide"},
+  {"a": 174.16, "b": 178.78, "spk": "M", "beat": "end", "shot": "wide"}
+ ],
+ "fixes": [
+  [16.10, "gốc,", "gốc"], [16.50, "Lát", "Latinh"], [16.72, "Tình", ""], [47.62, "Grop,", "đáp,"], [50.06, "sát", "thác"],
+  [58.74, "chat", "ChatGPT"], [58.96, "dbt", ""], [60.44, "clod", "Claude"], [93.40, "ai", "AI"], [101.96, "ai,", "AI,"],
+  [103.36, "ai", "AI"], [148.78, "Email,", "email,"], [164.54, "quen", "quét"], [166.78, "quen", "quét"]
+ ]
+}

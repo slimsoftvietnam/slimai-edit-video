@@ -601,7 +601,10 @@ def glass_from(src, out, x0, y0, x1, y1, r, alpha):
 # ----------------------------------------------------------------------------
 # sharpening
 # ----------------------------------------------------------------------------
-DETAIL = float(os.environ.get("EDIT_DETAIL", "1.0"))
+# the "iphone" look keeps the picture as the phone recorded it, so it skips the deconvolution unless asked
+# (EDIT_DETAIL=1 or "finish": {"detail": 1} in project.json); the film looks keep it on
+DETAIL = float(os.environ.get("EDIT_DETAIL", CFG.get("finish", {}).get(
+    "detail", 0.0 if CFG.get("look", "iphone") == "iphone" else 1.0)))
 _K3 = np.ones((3, 3), np.uint8)
 _scratch = {}
 

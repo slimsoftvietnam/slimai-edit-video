@@ -8,7 +8,6 @@ labelled in Vietnamese. Film grain, halation and vignette are added at render ti
 import argparse
 import json
 import os
-import subprocess
 import sys
 
 import numpy as np
@@ -37,18 +36,16 @@ CHOICES = [("iphone", "1 · Màu gốc iPhone (mặc định)"), ("cine_warm", "
 TW, TH = E.W // 2, E.H // 2            # each tile is a quarter of the layout frame
 t = args.t if args.t is not None else cfg["duration"] * 0.4
 transfer = cfg["transfer"]
-matrix = "2020_ncl" if transfer in ("hlg", "pq") else "709"
 rin = "full" if cfg.get("color_range") == "pc" else "limited"
-# the camera signal in float, scaled, exactly as build_master.py feeds it to the LUT
-raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{t:.2f}", "-i", cfg["source"], "-frames:v", "1", "-vf",
-                      f"zscale=w={TW}:h={TH}:filter=lanczos:min={matrix}:rin={rin}:r=full,format=gbrpf32le",
-                      "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
-planes = np.frombuffer(raw, np.float32).reshape(3, TH, TW)          # planar G, B, R
-signal = np.stack([planes[2], planes[0], planes[1]], -1)
+# the camera signal in float, scaled, exactly as build_master.py feeds it to the LUT; "iphone" graded as it grades it
+signal = F.source_frame(cfg["source"], t, (TW, TH), transfer, rin)
 
 sheet = np.zeros((E.H, E.W, 3), np.uint8)
 for k, (look, _label) in enumerate(CHOICES):
-    rgb = F.apply_look(signal.reshape(-1, 3), look, transfer).reshape(TH, TW, 3)
+    if look == "iphone":
+        rgb = F.source_frame(cfg["source"], t, (TW, TH), transfer, rin, iphone=True)
+    else:
+        rgb = F.apply_look(signal.reshape(-1, 3), look, transfer).reshape(TH, TW, 3)
     tile = (np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8)[..., ::-1]
     y0, x0 = (k // 2) * TH, (k % 2) * TW
     sheet[y0:y0 + TH, x0:x0 + TW] = tile

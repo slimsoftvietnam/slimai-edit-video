@@ -8,8 +8,11 @@ Everything here is a pure colour transform, so one LUT handles it at 30+ fps in 
 film effects (halation, grain, vignette) live in engine.py because they need neighbouring pixels.
 
     python film_look.py LOOK TRANSFER OUT.cube [--size 65]
+
+The "iphone" look on an HLG source is the exception: ffmpeg's own tone map does it (iphone_vf), not a LUT.
 """
 import argparse
+import subprocess
 
 import numpy as np
 
@@ -173,12 +176,50 @@ LOOKS = {
 
 LUMA_2020 = np.array([0.2627, 0.6780, 0.0593], np.float32)
 NAT_GAIN = 1.15      # HDR reference white lands near screen white and 18 % grey near 0.42, as a phone shows it
+IPHONE_NPL = 250     # nominal peak (nits) for decoding HLG in the "iphone" look, chosen against a plain crop on sunlit footage
+
+
+def iphone_vf(transfer, rin="limited", out_range="full", size=None, dither=False):
+    """ffmpeg filters for the "iphone" look on an HLG source, or None when the LUT path handles it (SDR, PQ).
+
+    natural() below placed HDR reference white just under SDR white and rolled every brighter value off into the
+    last few percent. On footage shot in direct sun that flattened skin and light clothes into pale patches,
+    which reads as blur. zscale's BT.2100 HLG decode with a modest nominal peak, then a Mobius tone map that
+    keeps saturation, holds the texture in those highlights and matches a plain crop of the same file.
+    Ends in BT.709 R'G'B' in out_range; size=(w, h) scales on the way, dither for an 8/10-bit output."""
+    if transfer != "hlg":
+        return None
+    sz = f"w={size[0]}:h={size[1]}:" if size else ""
+    dt = ":d=error_diffusion" if dither else ""
+    return (f"zscale={sz}filter=lanczos:t=linear:npl={IPHONE_NPL}:min=2020_ncl:tin=arib-std-b67:pin=2020:rin={rin},"
+            f"format=gbrpf32le,tonemap=mobius:desat=0,zscale=t=bt709:m=bt709:p=bt709:r={out_range}{dt}")
+
+
+def source_frame(source, t, size, transfer, rin="limited", iphone=False):
+    """One source frame at t seconds as float RGB (h, w, 3), scaled to size=(w, h).
+    iphone=False: the camera signal that apply_look() takes. iphone=True: already in the "iphone" look, exactly
+    as build_master.py grades it (HLG through iphone_vf, other transfers through natural())."""
+    w, h = size
+    nat = iphone_vf(transfer, rin, size=size) if iphone else None
+    if nat:
+        vf = nat + ",format=gbrpf32le"
+    else:
+        matrix = "2020_ncl" if transfer in ("hlg", "pq") else "709"
+        vf = f"zscale=w={w}:h={h}:filter=lanczos:min={matrix}:rin={rin}:r=full,format=gbrpf32le"
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{t:.2f}", "-i", source, "-frames:v", "1", "-vf", vf,
+                          "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+    planes = np.frombuffer(raw, np.float32).reshape(3, h, w)          # planar G, B, R
+    rgb = np.stack([planes[2], planes[0], planes[1]], -1)
+    if iphone and not nat:
+        rgb = apply_look(rgb.reshape(-1, 3), "iphone", transfer).reshape(h, w, 3)
+    return rgb
 
 
 def natural(signal, transfer):
     """The camera's own colours on an ordinary (SDR) screen: no film curve, no colour moves. HLG and PQ go
     through the BT.2100 display model, HDR reference white (203 nits) lands just under SDR white, and highlights
-    roll off on the brightest channel so that hues hold instead of clipping. SDR sources pass through."""
+    roll off on the brightest channel so that hues hold instead of clipping. SDR sources pass through.
+    HLG masters and previews no longer use this: they go through iphone_vf(). It stays for PQ (still untested)."""
     x = np.clip(signal, 0.0, 1.0)
     if transfer == "sdr":
         return x

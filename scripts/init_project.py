@@ -1,11 +1,18 @@
 """Create a project folder for one source video: probe it, write project.json, extract the audio.
 
-python init_project.py SOURCE.mov PROJECT_DIR [--look iphone] [--language vi] [--prompt "..."]
+python init_project.py SOURCE.mov PROJECT_DIR [--look iphone] [--language vi] [--prompt "..."] [--episode "05_Ten"]
+
+The episode (the deliverables' folder, see episode.py) comes from a source name that starts with a number, such as
+01_Phong_van.mov, or from --episode.
 """
 import argparse
 import json
 import os
 import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import episode  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("source")
@@ -15,6 +22,7 @@ ap.add_argument("--look", default="iphone", choices=["iphone", "cine_warm", "tea
 ap.add_argument("--language", default="vi")
 ap.add_argument("--prompt", default="Cuộc trò chuyện về AI, công nghệ, kinh doanh và cuộc sống. ChatGPT, Claude, AI agent, automation.")
 ap.add_argument("--fps", type=int, default=0, help="output frame rate (default: source, capped at 30)")
+ap.add_argument("--episode", default=None, help='episode folder name, e.g. "05_Ten_video" (default: from the source name)')
 args = ap.parse_args()
 
 src = os.path.abspath(args.source)
@@ -41,6 +49,9 @@ cfg.update({
     "look": cfg.get("look", args.look), "language": args.language, "whisper_prompt": cfg.get("whisper_prompt", args.prompt),
 })
 cfg.setdefault("speakers", {})
+ep = episode.normalise(args.episode) if args.episode else cfg.get("episode") or episode.from_source(src)
+if ep:
+    cfg["episode"] = ep
 json.dump(cfg, open(cfg_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 for rate, name in ((48000, "audio48k.wav"), (16000, "audio16k.wav")):
@@ -49,6 +60,11 @@ for rate, name in ((48000, "audio48k.wav"), (16000, "audio16k.wav")):
 
 print(f"project: {proj}")
 print(f"source: {w}x{h} {src_fps:.2f} fps, {transfer.upper()}, {v.get('pix_fmt')}, {cfg['bit_rate_mbps']} Mbps, {cfg['duration']:.1f} s")
+if ep:
+    print(f"episode: {ep} (deliverables go to output/{ep}/)")
+else:
+    print('episode: the source name has no number. Ask the user which episode this is, then set "episode" in '
+          'project.json, e.g. "05_Ten_video".')
 short = min(w, h)
 up_v, up_h = max(1920 / h, 1080 / w), max(1080 / h, 1920 / w)   # least upscale for the 9:16 and the 16:9 version
 for name, up in (("vertical", up_v), ("horizontal", up_h)):

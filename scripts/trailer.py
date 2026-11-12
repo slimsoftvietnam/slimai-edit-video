@@ -1,5 +1,5 @@
-"""Movie-trailer kit for a project's design.py. Read references/trailer.md first; examples/vibe-code-trailer/
-uses all of it.
+"""Movie-trailer kit for a project's design.py. Read references/trailer.md first; examples/ai-agent-trailer/
+is the current reference, examples/vibe-code-trailer/ an earlier one that still darkens the room.
 
     from story import *
     from trailer import *
@@ -8,8 +8,10 @@ uses all of it.
   card_text() lines. Put cards on the silences that select.json "gap_after" leaves (story.gap(beat)), or over a
   line for a voice-over-black beat. Captions hide while a card covers the frame.
 - flash(t): a white flash frame on a hard cut of the escalation. A few only, never more than three a second.
-- top_fade(): a soft dark fade under the top bar, on the room only, so titles and chips read on a bright sky.
-- dim_room(t0, t1): darkens the room but not the people, e.g. for "the old way".
+- pill_text(): tracked caps on a dark pill, for a title or a note over a bright sky. This is how text stays
+  legible without touching the picture.
+- top_fade() and dim_room(t0, t1): darken the sky or the room. Only when the user asks for a moodier picture: on
+  phone footage the darkening reads as haze ("mờ và nhòe"), and the user judges the colour against the original.
 - prompt_box() and title_slam(): a typed prompt and a title slam, for a twist and the title on black.
 The colour stays as the user chose it: the film feel comes from the bars, the cards and the rhythm, not a grade.
 The sound is registered with story.score(); trailer_score.py synthesises it and audio_mix.py mixes it.
@@ -18,10 +20,10 @@ import skia
 
 import story as _S
 from engine import AMBER, INK, MINT, WHITE, H, W, clamp01, draw_text, ease_in_cubic, ease_out_cubic, ease_out_expo, \
-    env, fill, font, lerp, rrect, stroke, text_width
+    env, fill, font, lerp, nfc, rrect, stroke, text_width
 
-__all__ = ["BAR", "CARDS", "FLASHES", "card", "curtain", "card_text", "flash", "top_fade", "dim_room", "wrap_text",
-           "prompt_box", "title_slam"]
+__all__ = ["BAR", "CARDS", "FLASHES", "card", "curtain", "card_text", "flash", "pill_text", "top_fade", "dim_room",
+           "wrap_text", "prompt_box", "title_slam"]
 
 YT = _S.YT
 BAR = 132 if YT else 104     # 16:9: a letterbox; 9:16: mostly under the platform UI, felt when the curtains move
@@ -72,8 +74,21 @@ def flash(t):
     FLASHES.append(t)
 
 
+def pill_text(L, t, t0, t1, text, x, y, size=30, rgb=WHITE, track=0.2):
+    """tracked caps centred on x, baseline y, on a dark pill that fades with them: legible over a bright sky
+    without darkening the picture. Draw it on ctx.front, or on ctx.behind to keep it behind the people."""
+    v = env(t, t0, t1, 0.25, 0.2)
+    if v <= 0:
+        return
+    f = font("bold", size)
+    tw = text_width(text, f, track * size)
+    L.c.drawRRect(rrect(x - tw / 2 - 26, y - size * 1.15, x + tw / 2 + 26, y + size * 0.55, size), fill(INK, 175 * v))
+    draw_text(L, text, f, x, y, rgb=rgb, a=255 * v, tracking=track * size)
+    L.mark(x - tw / 2 - 30, y - size * 1.3, x + tw / 2 + 30, y + size * 0.7)
+
+
 def top_fade(t0=0.0, t1=None, strength=0.62):
-    """dark fade from the top bar down to about a third of the frame, behind the people."""
+    """dark fade from the top bar down to about a third of the frame, behind the people. Opt-in: see the top."""
     depth = 330 if YT else 600
     t1 = _S.DUR if t1 is None else t1
     shader = []
@@ -92,7 +107,7 @@ def top_fade(t0=0.0, t1=None, strength=0.62):
 
 
 def dim_room(t0, t1, amount=100, fade_in=0.6, fade_out=0.3):
-    """darken the room (not the people) by amount/255 between t0 and t1; depth words still sit on top."""
+    """darken the room (not the people) by amount/255 between t0 and t1; depth words still sit on top. Opt-in."""
     def fn(ctx, t):
         v = env(t, t0, t1, fade_in, fade_out)
         if v > 0:
@@ -176,7 +191,11 @@ def title_slam(L, t, t0, text, sub=None, y=None, size=200, max_w=None):
         def glint(i, nn):
             return (0, 0, 1.0, max(0.0, 1 - abs(i - band) / 1.6) ** 1.5)
         draw_text(L, text, f, W / 2, y, a=170, tracking=trk, scale=sc, per_char=glint)
-    L.c.drawLine(W / 2 - 170 * k, y - 120 * K, W / 2 + 170 * k, y - 120 * K, stroke(AMBER, 180 * k, width=2))
+    # the accent line clears the tallest glyph, Vietnamese marks included. It used to sit at a fixed 120 px, which cut
+    # through the top of a large title (by 13 px on 9:16 and 52 px on 16:9)
+    tops = [r.top() for r in f.getBounds(f.textToGlyphs(nfc(text)))]
+    ly = y - (-min(tops) if tops else f.getMetrics().fCapHeight) - 22 * K
+    L.c.drawLine(W / 2 - 170 * k, ly, W / 2 + 170 * k, ly, stroke(AMBER, 180 * k, width=2))
     if sub and t >= t0 + 0.45:
         v = clamp01((t - t0 - 0.45) / 0.12)
         e = ease_out_cubic(clamp01((t - t0 - 0.45) / 0.45))

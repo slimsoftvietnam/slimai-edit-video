@@ -11,7 +11,6 @@ reference file.
 import argparse
 import json
 import os
-import subprocess
 import sys
 
 import cv2
@@ -52,13 +51,8 @@ SPK = args.spk or next(iter(E.FACE))
 ws = min(1.0, 1920 / max(E.SRC_W, E.SRC_H))           # work at HD at most
 fw, fh = int(round(E.SRC_W * ws)) // 2 * 2, int(round(E.SRC_H * ws)) // 2 * 2
 transfer = cfg["transfer"]
-matrix = "2020_ncl" if transfer in ("hlg", "pq") else "709"
 rin = "full" if cfg.get("color_range") == "pc" else "limited"
-raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{t_src:.2f}", "-i", cfg["source"], "-frames:v", "1", "-vf",
-                      f"zscale=w={fw}:h={fh}:filter=lanczos:min={matrix}:rin={rin}:r=full,format=gbrpf32le",
-                      "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
-planes = np.frombuffer(raw, np.float32).reshape(3, fh, fw)
-rgb = F.apply_look(np.stack([planes[2], planes[0], planes[1]], -1).reshape(-1, 3), "iphone", transfer).reshape(fh, fw, 3)
+rgb = F.source_frame(cfg["source"], t_src, (fw, fh), transfer, rin, iphone=True)
 frame = np.ascontiguousarray((np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8)[..., ::-1])
 
 model = torch.jit.load(os.path.join(os.path.dirname(HERE), "assets", "rvm", "rvm_mobilenetv3_fp32.torchscript")).eval()
@@ -185,21 +179,16 @@ def std_end():
 # style 2: the film trailer (references/trailer.md)
 # ----------------------------------------------------------------------------
 def tr_montage():
-    img = VIEW.copy()
+    img = VIEW.copy()                     # the picture stays as shot: no darkened sky or room (references/trailer.md)
     b, f_ = layer(), layer()
-    b.c.drawRect(skia.Rect.MakeLTRB(0, 0, W, H), E.fill((0, 0, 0), 100))          # the room dimmed, not the people
-    p = skia.Paint(AntiAlias=True)
-    p.setShader(skia.GradientShader.MakeLinear([skia.Point(0, 104), skia.Point(0, 600)],
-                                               [skia.Color4f(0, 0, 0, 0.62), skia.Color4f(0, 0, 0, 0)]))
-    b.c.drawRect(skia.Rect.MakeLTRB(0, 0, W, 600), p)
-    b.mark(0, 0, W, H, pad=0)
     depth(b, "QUAY LẠI", 270, kind="serif_ib", rgb=E.CORAL, tracking=0.0, glow=(255, 90, 70))
     behind(img, b)
     c = f_.c
     f = E.font("bold", 40)
-    E.draw_text(f_, "BƯỚC 03", f, W / 2 + 28, 320, rgb=E.CORAL, tracking=0.24 * 40, shadow=8, shadow_a=170)
-    c.drawCircle(W / 2 + 28 - E.text_width("BƯỚC 03", f, 0.24 * 40) / 2 - 40, 306, 17, E.stroke(E.CORAL, 235, width=3))
     x0 = W / 2 - (8 * 86 + 7 * 12) / 2
+    c.drawRRect(E.rrect(x0 - 34, 262, W - x0 + 34, 384, 30), E.fill(E.INK, 165))     # the counter on its own plate
+    E.draw_text(f_, "BƯỚC 03", f, W / 2 + 28, 320, rgb=E.CORAL, tracking=0.24 * 40)
+    c.drawCircle(W / 2 + 28 - E.text_width("BƯỚC 03", f, 0.24 * 40) / 2 - 40, 306, 17, E.stroke(E.CORAL, 235, width=3))
     for i in range(8):
         xa = x0 + i * 98
         c.drawRRect(E.rrect(xa, 350, xa + 86, 362, 6), E.fill(E.CORAL if i < 3 else E.WHITE, 240 if i < 3 else 70))
@@ -222,10 +211,13 @@ def tr_card():
 def tr_title():
     img = np.zeros((H, W, 3), np.uint8)
     L = layer()
-    E.draw_text(L, "TÊN VIDEO", E.font("black", 170), W / 2, 1000, tracking=0.02 * 170, gradient=(E.WHITE, (186, 198, 214)),
+    E.draw_text(L, "TÊN VIDEO", E.font("black", 170), W / 2, 860, tracking=0.02 * 170, gradient=(E.WHITE, (186, 198, 214)),
                 glow=(255, 236, 200), glow_a=60, glow_blur=30)
-    L.c.drawLine(W / 2 - 170, 880, W / 2 + 170, 880, E.stroke(E.AMBER, 180, width=2))
-    E.draw_text(L, "Twist ở cuối, rồi tên phim.", E.font("serif_i", 50), W / 2, 1098, rgb=E.AMBER)
+    L.c.drawLine(W / 2 - 170, 740, W / 2 + 170, 740, E.stroke(E.AMBER, 180, width=2))
+    E.draw_text(L, "Twist ở cuối, rồi tên phim.", E.font("serif_i", 50), W / 2, 958, rgb=E.AMBER)
+    E.draw_text(L, "Rồi một câu mời follow", E.font("bold", 54), W / 2, 1180)
+    E.draw_text(L, "hài mà trúng ý chính.", E.font("serif_ib", 60), W / 2, 1266, rgb=E.AMBER, glow=(255, 170, 60),
+                glow_a=110, glow_blur=26)
     over(img, L)
     return img
 
@@ -233,7 +225,7 @@ def tr_title():
 STYLES = [  # (label, one line for the sheet, frames) in the order of the question: the default first
     ("1 · Tiêu chuẩn (mặc định)", "Nhịp nhanh, chữ đứng sau người nói, sơ đồ, phụ đề từng chữ, nhạc nền nhẹ",
      (std_depth, std_diagram, std_end)),
-    ("2 · Trailer phim", "Màn đen chèn chữ, trống dồn, im lặng trước khi lật bài, twist ở cuối · 45-60 giây",
+    ("2 · Trailer phim", "Màn đen chèn chữ, trống dồn, im lặng trước khi lật bài, twist ở cuối · 45-90 giây",
      (tr_montage, tr_card, tr_title)),
 ]
 

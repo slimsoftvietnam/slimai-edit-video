@@ -4,8 +4,8 @@ Agent skill cho Claude Code: dựng video nói chuyện, phỏng vấn, podcast 
 
 Trước khi dựng, Claude gửi hai ảnh lấy từ chính video của bạn rồi hỏi bạn chọn:
 
-- **Phong cách dựng:** Tiêu chuẩn (mặc định) hoặc Trailer phim. Trailer phim có màn đen chèn chữ, trống dồn và twist ở cuối, dài 45-60 giây, dành cho TikTok.
-- **Màu:** màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính.
+- **Phong cách dựng:** Tiêu chuẩn (mặc định) hoặc Trailer phim. Trailer phim có màn đen chèn chữ, trống dồn, twist và một câu kêu gọi follow hài hước ở cuối, thường dài 45-90 giây, dành cho TikTok.
+- **Màu:** màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính. Màu gốc iPhone giữ hình như file quay: không khử nhiễu, không làm nét thêm, vùng nắng vẫn giữ chi tiết.
 
 Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Skill cũng xuất thumbnail, phụ đề SRT, danh sách chương và bộ nội dung đăng YouTube: ba tiêu đề để YouTube thử xem tiêu đề nào giữ người xem lâu hơn, mô tả, thẻ và bình luận ghim. Từ khóa lấy từ gợi ý tìm kiếm của chính YouTube.
 
@@ -32,6 +32,12 @@ Edit video này thành bản TikTok và YouTube: D:\Videos\phong-van.mov
 
 Hoặc gõ `/slimai-edit-video`. Claude nghe toàn bộ lời thoại, chọn câu chuyện, viết thiết kế cho video, soát ảnh tĩnh, rồi render và tự kiểm tra kết quả.
 
+Mỗi video là một tập, có thư mục kết quả riêng trong `output/`.
+
+- **Số tập** lấy từ số đầu tên file gốc: `01_Phong_van.mov` là tập 01, kết quả nằm trong `output/01_Phong_van/`. File gốc chưa có số thì Claude hỏi.
+- **Ngoài cùng thư mục tập** là bản mới nhất để đăng, ví dụ `01_Phong_van_TikTok_v2.mp4`, kèm bản xem trên điện thoại, ảnh bìa, phụ đề và nội dung đăng YouTube.
+- **Bản cũ** tự chuyển vào `ban_cu/`. Ảnh so sánh nằm trong `so_sanh/`.
+
 Trên laptop i5, video 2 phút từ nguồn 6 phút cần khoảng 1 giờ máy chạy. Quy trình chi tiết nằm trong [SKILL.md](SKILL.md).
 
 ## Nguồn video
@@ -50,7 +56,7 @@ Trên laptop i5, video 2 phút từ nguồn 6 phút cần khoảng 1 giờ máy 
 | `SKILL.md` | Quy trình Claude làm theo |
 | `scripts/` | Toàn bộ code: màu phim, dựng hình, kiểu trailer, âm thanh, ảnh minh họa phong cách và màu, kiểm tra, từ khóa YouTube |
 | `references/` | Cẩm nang thiết kế, cách dựng trailer, màu và độ nét, thông số nền tảng và cách soạn nội dung đăng YouTube, các lỗi đã gặp |
-| `examples/` | Ba dự án thật (clip 40 giây, video 2 phút, trailer 55 giây) và một bộ nội dung đăng YouTube mẫu. Không kèm video nguồn |
+| `examples/` | Bốn dự án thật (clip 40 giây, video 2 phút, hai trailer 55 và 88 giây) và một bộ nội dung đăng YouTube mẫu. Không kèm video nguồn |
 | `assets/` | Font và model tách người |
 
 ## Bên thứ ba

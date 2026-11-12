@@ -2,8 +2,12 @@
 
 python finish.py --project P --fmt tiktok|youtube VIDEO.mp4 OUT_NAME [--outdir DIR] [--no-preview]
 
-Writes OUT_NAME.mp4 (AAC 320k, BT.709 tags, faststart) and OUT_NAME_preview_720p.mp4 (under 30 MB, for
-sending to a phone), then prints a PASS/FAIL report: resolution, frame count, colour tags, loudness, true peak.
+Writes OUT_NAME.mp4 (AAC 320k, BT.709 tags, faststart) and OUT_NAME_preview_1080p.mp4 (under 30 MB, for
+sending to a phone; 720p when the video is too long for 1080p at that size), then prints a PASS/FAIL report:
+resolution, frame count, colour tags, loudness, true peak.
+
+OUT_NAME comes from episode.py (EPISODE_VARIANT_vN) and --outdir is the episode folder. When every check passes, the
+files of the earlier versions of that deliverable move into ban_cu/, so only the newest stays on top.
 """
 import argparse
 import json
@@ -11,6 +15,9 @@ import os
 import re
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import episode  # noqa: E402
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--project", required=True)
@@ -57,9 +64,13 @@ for name, passed, val in checks:
 print(f"file: {out}\n      {dur:.1f} s, {v.get('nb_read_frames')} frames, {size / 1e6:.0f} MB, {size * 8 / dur / 1e6:.1f} Mbps")
 
 if not args.no_preview:
-    pv = os.path.join(outdir, args.name + "_preview_720p.mp4")
-    scale = "scale=1280:720" if v["width"] > v["height"] else "scale=720:1280"
-    br = int(min(1650, (27.5e6 * 8 / dur - 128e3) / 1000))     # stay under the 30 MiB phone limit
+    # the user judges the edit on a phone: 1080p while the bitrate allows it, 720p for a long video, under 30 MiB
+    br = int((28.5e6 * 8 / dur - 160e3) / 1000)
+    hd = br >= 1200
+    br = min(br, 6000 if hd else 1650)
+    long_side, short_side = (1920, 1080) if hd else (1280, 720)
+    pv = os.path.join(outdir, f"{args.name}_preview_{short_side}p.mp4")
+    scale = f"scale={long_side}:{short_side}" if v["width"] > v["height"] else f"scale={short_side}:{long_side}"
     log = os.path.join(outdir, "x264pass")
     base = ["ffmpeg", "-v", "error", "-y", "-i", out, "-vf", f"{scale}:flags=lanczos", "-c:v", "libx264", "-preset", "slow",
             "-b:v", f"{br}k", "-passlogfile", log]
@@ -70,4 +81,10 @@ if not args.no_preview:
         if f.startswith("x264pass"):
             os.remove(os.path.join(outdir, f))
     print(f"preview: {pv} ({os.path.getsize(pv) / 1e6:.0f} MB)")
+if ok:
+    moved, kept = episode.retire(outdir, args.name)
+    if moved:
+        print(f"earlier versions moved into {episode.OLD_DIR}/: {', '.join(moved)}")
+    if kept:
+        print(f"left on top, {episode.OLD_DIR}/ already has a file of that name: {', '.join(kept)}")
 sys.exit(0 if ok else 1)

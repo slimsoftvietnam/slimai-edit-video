@@ -1,6 +1,8 @@
 """YouTube thumbnails (1280x720) with the same engine: depth text behind the speaker, subject pop.
 
-python thumbnail.py --project P [--outdir DIR]     runs P/thumbs.py, which defines THUMBS = {"file.jpg": fn}
+python thumbnail.py --project P [--outdir DIR] [--prefix NAME]     runs P/thumbs.py, which defines THUMBS = {"file.jpg": fn}
+--prefix puts the deliverable's name in front of each file: with THUMBS keys such as "thumbnail_A.jpg" and the YouTube
+name from episode.py, the files share its stem (01_Phong_van_YouTube_HD_v1_thumbnail_A.jpg) and retire with it.
 Each fn returns compose(source_frame, cam_for(zoom, face_x, face_y), behind_fn, front_fn, keep_x0).
 Use a frame that exists in the master (a frame from the timeline). See examples/repo-ai-agent/thumbs.py.
 """
@@ -12,6 +14,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", required=True)
     ap.add_argument("--outdir", default=None)
+    ap.add_argument("--prefix", default=None, help="deliverable name put in front of each file name")
     ARGS = ap.parse_args()
     os.environ["EDIT_PROJECT"] = os.path.abspath(ARGS.project)
 os.environ["EDIT_FMT"] = "youtube"
@@ -111,6 +114,6 @@ if __name__ == "__main__":
     outdir = os.path.abspath(ARGS.outdir or os.path.join(E.PROJECT, "output"))
     os.makedirs(outdir, exist_ok=True)
     for name, fn in thumbs.THUMBS.items():
-        p = os.path.join(outdir, name)
+        p = os.path.join(outdir, f"{ARGS.prefix}_{name}" if ARGS.prefix else name)
         imwrite(p, fn(), [cv2.IMWRITE_JPEG_QUALITY, 92])
         print(p, os.path.getsize(p) // 1024, "KB")

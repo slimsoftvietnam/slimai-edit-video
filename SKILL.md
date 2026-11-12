@@ -18,12 +18,13 @@ HD is what the user wants for YouTube. Render 4K (`--ss 2`, CRF 18) only if they
 
 ## Before starting
 
-Run `python <skill>/scripts/doctor.py` once per machine; missing packages are in `<skill>/requirements.txt`, and Whisper downloads its model (about 1.5 GB) on first use, so ask before installing or downloading. Then settle four things:
+Run `python <skill>/scripts/doctor.py` once per machine; missing packages are in `<skill>/requirements.txt`, and Whisper downloads its model (about 1.5 GB) on first use, so ask before installing or downloading. Then settle five things:
 
 - **Formats**: both unless the user names one. Do not ask.
 - **Style**: always ask, with a demo, together with the colour, as step 1 describes, unless the request already names a style ("làm kiểu trailer phim"). The default is the standard edit. A trailer is made for TikTok; offer the 16:9 version only if they ask.
-- **Colour**: always ask, with a preview, as step 1 describes, unless the request already says which colour. The default is `iphone`, the colour the phone recorded with no grade and no film grain, halation, vignette or light leaks.
-- **Project folder**: `<working dir>/projects/<slug>`. Deliverables go to `<working dir>/output`. Never overwrite an earlier deliverable; use a new name. Do not ask.
+- **Colour**: always ask, with a preview, as step 1 describes, unless the request already says which colour. The default is `iphone`, the colour the phone recorded with no grade and no film grain, halation, vignette or light leaks. It also skips the denoise and the extra sharpening, and tone-maps HLG so that sunlit skin and clothes keep their texture. The user compares the edit with the original on the phone.
+- **Episode**: every video is an episode, and its deliverables go in a folder of their own, `<working dir>/output/<NN>_<name>/` (step 9). The number is the one at the start of the source file name: `01_Phong_van.mov` is episode 01, and `init_project.py` records it. If the source name has no number, step 1 asks.
+- **Project folder**: `<working dir>/projects/<slug>`. Do not ask. Never overwrite an earlier deliverable: a new version takes the next `_vN`.
 
 Set expectations on time. On an i5 laptop a 2-minute edit from a 6-minute source takes about 20 min of transcription, 4 min for the master, 15 min for mattes (`matte.py`), and about 9 min each for the vertical and HD renders. Long steps go in the background, one heavy job at a time.
 
@@ -40,14 +41,14 @@ python <skill>/scripts/style_preview.py PROJECT PROJECT/style_choices.jpg
 python <skill>/scripts/speaker_hints.py PROJECT
 ```
 
-**Ask about style and colour on every new video**, unless the request already says which. Send `style_choices.jpg` (one frame of their video drawn in each style, three frames per style) and `look_choices.jpg` (the same video in all four looks) with SendUserFile, then ask one AskUserQuestion with two questions. Leave out a question the request has already answered. If they want to see a style in motion, send the preview of an earlier edit in that style when one exists in the output folder.
+**Ask about style and colour on every new video**, unless the request already says which. Send `style_choices.jpg` (one frame of their video drawn in each style, three frames per style) and `look_choices.jpg` (the same video in all four looks) with SendUserFile, then ask one AskUserQuestion with two questions. Add a third when `init_project` says the source name has no episode number. Leave out a question the request has already answered. If they want to see a style in motion, send the preview of an earlier edit in that style when one exists in the output folder.
 
 Style: "Bạn muốn dựng theo phong cách nào? (xem ảnh minh họa vừa gửi)", header "Phong cách". Offer these options in this order, the default first:
 
 | Label | Description | What it changes |
 |---|---|---|
 | Tiêu chuẩn (mặc định) | Nhịp nhanh, chữ đứng sau người nói, sơ đồ motion graphic, phụ đề từng chữ, nhạc nền nhẹ; ra cả bản dọc và ngang | the workflow below as written |
-| Trailer phim | Mở bằng câu hỏi, màn đen chèn chữ, trống dồn, im lặng trước khi lật bài, twist ở cuối; 45-60 giây, cho TikTok | read `references/trailer.md` before step 2 |
+| Trailer phim | Mở bằng câu hỏi, màn đen chèn chữ, trống dồn, im lặng trước khi lật bài, twist ở cuối; 45-90 giây, cho TikTok | read `references/trailer.md` before step 2 |
 
 If the user describes a style of their own, use the closest one or mix them (trailer cards inside a standard edit, say), and tell them what you did. If there is no clear answer, use the standard edit. A new style needs a row here, a reference file and frames in `style_preview.py`.
 
@@ -62,6 +63,10 @@ Colour: "Bạn muốn video giữ màu nào? (xem ảnh 4 kiểu màu vừa gử
 
 Pass the answer to `build_master.py --look`. If the user writes their own description instead, pick the closest look and say which one you used. If there is no clear answer, use `iphone`. To show two looks side by side later, copy the project folder (keep `matte/` and `audio_*`), rebuild its master with the other `--look`, and render it.
 
+Episode, only when the source name has no number: "Video này là tập mấy?", header "Số tập".
+- Options: "Tập NN (số tiếp theo)" first, then "Không đánh số". NN comes from `episode.py --next OUTPUT`; the user may type another number.
+- Then set `"episode"` in `project.json`: `NN_<name>` (`episode.normalise()` gives the form), or the name alone for "Không đánh số".
+
 `--prompt` tells Whisper the names and jargon to expect. Write it as one natural sentence in the video's language: a bare keyword list can make Whisper skip most of the speech. `init_project` warns about thin sources; pass those warnings on. `transcribe` reports any speech it had to re-hear or could not place, so read that output. Then look at `faces_check.jpg`. Everything that sits behind a head depends on those markers, so correct `project.json` by hand when one is off. Treat `speakers.txt` as a draft: open frames for any segment with a score below about 1.3. Mouth motion is reliable, voice pitch is not. Names in `--names` go left to right.
 
 Tested on landscape and portrait sources, 1080p and 4K, HLG and SDR, one person and two. PQ is written but has not been run on a real clip, so check a graded frame first. A portrait source makes a good vertical video, but its 16:9 version can only be a tight crop on the face, so offer the vertical alone. The camera is assumed static: a moving camera breaks the fixed face positions, so look at the footage first and say so if it does not fit, rather than forcing it. Log footage is not supported.
@@ -74,7 +79,7 @@ Read the whole transcript before cutting. This is the step that decides whether 
 - **One throughline.** Each clip either raises a question or answers one. Cut setup, repetition and asides, even good ones. A 6.5-minute talk became 2 minutes in the worked example.
 - **Fix what Whisper misheard** in `fixes`. For a doubtful passage, re-listen: `transcribe.py PROJECT --range a b --prompt "expected words"`. Captions with wrong words read as careless, so check names and jargon especially.
 
-Schema and field meanings are at the top of `scripts/build_timeline.py`; see `examples/repo-ai-agent/select.json`. A trailer has a shape of its own (hook, the old way, the turn, the reveal, the escalation, the twist and the title) and leaves silences for its black cards with `gap_after`; see `references/trailer.md` and `examples/vibe-code-trailer/select.json`.
+Schema and field meanings are at the top of `scripts/build_timeline.py`; see `examples/repo-ai-agent/select.json`. A trailer has a shape of its own (hook, the old way, the turn, the reveal, the escalation, the twist and the title) and leaves silences for its black cards with `gap_after`; see `references/trailer.md` and `examples/ai-agent-trailer/select.json`.
 
 ```bash
 python <skill>/scripts/build_timeline.py PROJECT      # -> timeline.json, words.txt
@@ -93,7 +98,7 @@ Rerun both after any change to the selected clips (`matte.py` skips frames it al
 
 ### 4. Design once for both formats: `design.py`
 
-Read `references/design-playbook.md` before writing it. Copy the shape of `examples/cowork-40s/design.py`, which is short enough to read in one go; `examples/repo-ai-agent/design.py` shows many more recipes on a 2-minute edit. Format differences go through `pick(youtube, tiktok)` and `place(ctx, yt, tk)`, so there is a single story and no second file to keep in sync. A trailer adds `from trailer import *` (curtain cards, flash frames, the dimmed room, the typed prompt, the title slam) and registers its score with `score()`; copy the shape of `examples/vibe-code-trailer/design.py`.
+Read `references/design-playbook.md` before writing it. Copy the shape of `examples/cowork-40s/design.py`, which is short enough to read in one go; `examples/repo-ai-agent/design.py` shows many more recipes on a 2-minute edit. Format differences go through `pick(youtube, tiktok)` and `place(ctx, yt, tk)`, so there is a single story and no second file to keep in sync. A trailer adds `from trailer import *` (curtain cards, flash frames, pills for text over the sky, the typed prompt, the title slam) and registers its score with `score()`; copy the shape of `examples/ai-agent-trailer/design.py`. Take times from `word_in(beat, word)`, `beat_start(beat)` and `beat_end(beat)`, so a recut does not move them.
 
 ### 5. Review stills, fix, repeat
 
@@ -136,21 +141,27 @@ Judge the first 3 seconds alone, then whether something new happens every few se
 ### 9. Deliver
 
 ```bash
-python <skill>/scripts/finish.py --project PROJECT --fmt tiktok PROJECT/render/tiktok.mp4 NAME_TikTok --outdir OUTPUT
-python <skill>/scripts/finish.py --project PROJECT --fmt youtube PROJECT/render/youtube.mp4 NAME_YouTube_HD --outdir OUTPUT
-python <skill>/scripts/export_captions.py --project PROJECT --fmt youtube NAME_YouTube --outdir OUTPUT
-python <skill>/scripts/thumbnail.py --project PROJECT --outdir OUTPUT
+python <skill>/scripts/episode.py PROJECT OUTPUT TikTok          # prints EP_DIR, then TK, e.g. 01_Phong_van_TikTok_v1
+python <skill>/scripts/finish.py --project PROJECT --fmt tiktok PROJECT/render/tiktok.mp4 TK --outdir EP_DIR
+python <skill>/scripts/episode.py PROJECT OUTPUT YouTube_HD      # prints EP_DIR, then YT, e.g. 01_Phong_van_YouTube_HD_v1
+python <skill>/scripts/finish.py --project PROJECT --fmt youtube PROJECT/render/youtube.mp4 YT --outdir EP_DIR
+python <skill>/scripts/export_captions.py --project PROJECT --fmt youtube YT --outdir EP_DIR
+python <skill>/scripts/thumbnail.py --project PROJECT --outdir EP_DIR --prefix YT
 python <skill>/scripts/youtube_meta.py suggest "TOPIC" "TOPIC là gì"
-python <skill>/scripts/youtube_meta.py measure OUTPUT/NAME_YouTube_kit.txt --keyword "TOPIC là gì"
+python <skill>/scripts/youtube_meta.py measure EP_DIR/YT_kit.txt --keyword "TOPIC là gì"
 ```
 
-- `finish.py` prints PASS or FAIL for resolution, colour tags, pixel format, loudness and peak, and writes a 720p preview under 30 MB. Send previews with SendUserFile; the masters are too big, so give their paths. A FAIL means fix it, not report around it.
-- Thumbnails need a `thumbs.py` in the project; see the example. For a TikTok cover, take a `--stills` frame with the strongest depth word.
+- **One folder per episode.** `OUTPUT` is `<working dir>/output`, and `EP_DIR` is `OUTPUT/<episode>`, with the episode taken from `project.json`.
+  - **Names.** Every file of a deliverable starts with its name: the video, `_preview_1080p.mp4`, the TikTok cover `_cover.jpg`, `.srt`, `_chapters.txt`, `_kit.txt` and the thumbnails.
+  - **Variants.** `TikTok`, `TikTok_trailer`, `YouTube_HD`. A second colour adds its look, as in `TikTok_cine_warm`.
+- **Only the newest version stays on top.** When a new version passes, `finish.py` moves the earlier versions of that variant into `ban_cu/`. Comparison sheets and tests go in `so_sanh/`. Leave nothing loose in `OUTPUT`.
+- `finish.py` prints PASS or FAIL for resolution, colour tags, pixel format, loudness and peak, and writes a 1080p preview under 30 MB (720p for a video longer than about 2.8 minutes). Send previews with SendUserFile; the masters are too big, so give their paths. A FAIL means fix it, not report around it.
+- Thumbnails need a `thumbs.py` in the project; see the example. Name its `THUMBS` keys `thumbnail_A.jpg`, `thumbnail_B.jpg`, so that `--prefix` gives them the deliverable's name. For a TikTok cover, take a `--stills` frame with the strongest depth word and save it as `EP_DIR/TK_cover.jpg`.
 - For YouTube, write the publishing kit as `references/platforms.md` describes: keywords from YouTube's own suggestions, three titles for Test & Compare, the description, tags, pinned comment and upload notes. Check it with `measure`, and put the parts the user will paste into the reply as well. Thumbnails come from the master in the colour the user chose.
 
 ### 10. Report honestly
 
-Say what works and what does not, based on what you checked: frames reviewed, the PASS/FAIL report, file sizes. Name what you could not verify, such as how the audio sounds. Name limits that come from the source, such as resolution and bitrate. Previews are heavily compressed, so do not judge sharpness from them, and warn the user not to.
+Say what works and what does not, based on what you checked: frames reviewed, the PASS/FAIL report, file sizes. Name what you could not verify, such as how the audio sounds. Name limits that come from the source, such as resolution and bitrate. For example, a vertical cut of a 1080p landscape source is a 1.78x blow-up, and the iPhone plays the original in HDR. Previews are heavily compressed, so do not judge sharpness from them, and warn the user not to.
 
 ## Editing rules
 
@@ -172,4 +183,4 @@ These come from real feedback on real edits. The reasons matter when a new video
 - `references/platforms.md`: delivery specs, upload settings, and the YouTube publishing kit: keywords, titles for Test & Compare, description, tags. Read before writing the kit.
 - `references/trailer.md`: the trailer style: its shape, cards and gaps, the twist, the kit and the score. Read before cutting a trailer.
 - `references/gotchas.md`: hard-won failures of the toolchain. Read when something breaks.
-- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format. `examples/vibe-code-trailer/` is a 55 s TikTok trailer (`select.json`, `design.py`).
+- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format. `examples/ai-agent-trailer/` is an 88 s trailer with its TikTok cut and its 16:9 YouTube version from one design, the one to copy (`select.json`, `design.py`, `thumbs.py`), and `examples/vibe-code-trailer/` an earlier 55 s TikTok-only one.
