@@ -1,0 +1,268 @@
+{
+ "note": "Trailer cut for TikTok (references/trailer.md), MCP spelled out letter by letter: her question; a date card; 'mình đi từng từ'; M = model (the Claude myth), C = context (a brain with no eyes or hands, Gmail and Notion, the USB analogy), P = protocol; the twist is the P in HTTP and her 'À'; the last line, then the title. gap_after = seconds of silence for a black card. Shots stay wide; hook and twist play as a split screen (man on top, woman below), see split_screen() in design.py. Cut points sit in measured silences.",
+ "clips": [
+  {
+   "a": 36.2,
+   "b": 41.66,
+   "spk": "W",
+   "beat": "hook",
+   "shot": "wide",
+   "gap_after": 1.6
+  },
+  {
+   "a": 48.72,
+   "b": 50.16,
+   "spk": "M",
+   "beat": "word",
+   "shot": "wide"
+  },
+  {
+   "a": 57.96,
+   "b": 60.56,
+   "spk": "M",
+   "beat": "name",
+   "shot": "wide",
+   "gap_after": 1.0
+  },
+  {
+   "a": 63.24,
+   "b": 68.75,
+   "spk": "M",
+   "beat": "model",
+   "shot": "wide"
+  },
+  {
+   "a": 73.3,
+   "b": 75.84,
+   "spk": "M",
+   "beat": "myth",
+   "shot": "wide",
+   "gap_after": 0.4
+  },
+  {
+   "a": 75.88,
+   "b": 80.45,
+   "spk": "M",
+   "beat": "truth",
+   "shot": "wide",
+   "gap_after": 1.0
+  },
+  {
+   "a": 101.1,
+   "b": 106.05,
+   "spk": "M",
+   "beat": "context",
+   "shot": "wide"
+  },
+  {
+   "a": 110.0,
+   "b": 111.86,
+   "spk": "M",
+   "beat": "brain",
+   "shot": "wide",
+   "hard": {
+    "a": 109.97
+   }
+  },
+  {
+   "a": 112.36,
+   "b": 116.5,
+   "spk": "M",
+   "beat": "noeyes",
+   "shot": "wide"
+  },
+  {
+   "a": 118.38,
+   "b": 124.22,
+   "spk": "M",
+   "beat": "plug",
+   "shot": "wide"
+  },
+  {
+   "a": 156.74,
+   "b": 159.64,
+   "spk": "M",
+   "beat": "gmail",
+   "shot": "wide"
+  },
+  {
+   "a": 160.04,
+   "b": 160.9,
+   "spk": "M",
+   "beat": "gmail2",
+   "shot": "wide"
+  },
+  {
+   "a": 161.5,
+   "b": 161.86,
+   "spk": "M",
+   "beat": "gmail2",
+   "shot": "wide",
+   "hard": {
+    "b": 161.88
+   }
+  },
+  {
+   "a": 163.24,
+   "b": 165.26,
+   "spk": "M",
+   "beat": "gmail2",
+   "shot": "wide",
+   "hard": {
+    "a": 163.3
+   }
+  },
+  {
+   "a": 165.96,
+   "b": 168.8,
+   "spk": "M",
+   "beat": "notion",
+   "shot": "wide"
+  },
+  {
+   "a": 174.4,
+   "b": 182.04,
+   "spk": "M",
+   "beat": "usb",
+   "shot": "wide",
+   "gap_after": 1.0
+  },
+  {
+   "a": 188.8,
+   "b": 196.78,
+   "spk": "M",
+   "beat": "protocol",
+   "shot": "wide",
+   "gap_after": 1.2
+  },
+  {
+   "a": 197.74,
+   "b": 202.7,
+   "spk": "M",
+   "beat": "http",
+   "shot": "wide"
+  },
+  {
+   "a": 202.86,
+   "b": 204.36,
+   "spk": "W",
+   "beat": "aha",
+   "shot": "wide",
+   "hard": {
+    "b": 204.36
+   }
+  },
+  {
+   "a": 208.2,
+   "b": 212.52,
+   "spk": "M",
+   "beat": "end",
+   "shot": "wide",
+   "hard": {
+    "a": 208.06
+   }
+  },
+  {
+   "a": 213.4,
+   "b": 214.6,
+   "spk": "M",
+   "beat": "end",
+   "shot": "wide"
+  },
+  {
+   "a": 215.98,
+   "b": 216.68,
+   "spk": "M",
+   "beat": "end",
+   "shot": "wide"
+  },
+  {
+   "a": 217.28,
+   "b": 218.28,
+   "spk": "M",
+   "beat": "end",
+   "shot": "wide"
+  },
+  {
+   "a": 219.54,
+   "b": 220.4,
+   "spk": "M",
+   "beat": "end",
+   "shot": "wide"
+  },
+  {
+   "a": 222.2,
+   "b": 222.66,
+   "spk": "M",
+   "beat": "end",
+   "shot": "wide"
+  }
+ ],
+ "fixes": [
+  [
+   114.04,
+   "như",
+   "nhưng"
+  ],
+  [
+   158.9,
+   "gmail",
+   "Gmail"
+  ],
+  [
+   164.78,
+   "gmail.",
+   "Gmail."
+  ],
+  [
+   192.82,
+   "chuẩn,",
+   "chuẩn"
+  ],
+  [
+   193.54,
+   "trung,",
+   "chung,"
+  ],
+  [
+   194.82,
+   "trung",
+   "chung"
+  ],
+  [
+   215.58,
+   "mode",
+   "model"
+  ],
+  [
+   217.98,
+   "quan",
+   "quán"
+  ],
+  [
+   35.56,
+   "ơi...",
+   ""
+  ],
+  [
+   48.52,
+   "nhé.",
+   ""
+  ],
+  [
+   59.98,
+   "Vậy",
+   ""
+  ],
+  [
+   109.78,
+   "là",
+   ""
+  ],
+  [
+   205.9,
+   "cái",
+   ""
+  ]
+ ]
+}

@@ -7,7 +7,7 @@ Trước khi dựng, Claude gửi hai ảnh lấy từ chính video của bạn 
 - **Phong cách dựng:** Tiêu chuẩn (mặc định) hoặc Trailer phim. Trailer phim có màn đen chèn chữ, trống dồn, twist và một câu kêu gọi follow hài hước ở cuối, thường dài 45-90 giây, dành cho TikTok.
 - **Màu:** màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính. Màu gốc iPhone giữ hình như file quay: không khử nhiễu, không làm nét thêm, vùng nắng vẫn giữ chi tiết.
 
-Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Skill cũng xuất thumbnail, phụ đề SRT, danh sách chương và bộ nội dung đăng YouTube: ba tiêu đề để YouTube thử xem tiêu đề nào giữ người xem lâu hơn, mô tả, thẻ và bình luận ghim. Từ khóa lấy từ gợi ý tìm kiếm của chính YouTube.
+Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Video hai người có thể chia đôi khung dọc, nam trên nữ dưới, ở những câu hỏi hay phản ứng cần thấy cả hai gương mặt. Skill cũng xuất thumbnail, phụ đề SRT, danh sách chương và bộ nội dung đăng YouTube: ba tiêu đề để YouTube thử xem tiêu đề nào giữ người xem lâu hơn, mô tả, thẻ và bình luận ghim. Từ khóa lấy từ gợi ý tìm kiếm của chính YouTube.
 
 ## Cài đặt
 
@@ -56,7 +56,7 @@ Trên laptop i5, video 2 phút từ nguồn 6 phút cần khoảng 1 giờ máy 
 | `SKILL.md` | Quy trình Claude làm theo |
 | `scripts/` | Toàn bộ code: màu phim, dựng hình, kiểu trailer, âm thanh, ảnh minh họa phong cách và màu, kiểm tra, từ khóa YouTube |
 | `references/` | Cẩm nang thiết kế, cách dựng trailer, màu và độ nét, thông số nền tảng và cách soạn nội dung đăng YouTube, các lỗi đã gặp |
-| `examples/` | Bốn dự án thật (clip 40 giây, video 2 phút, hai trailer 55 và 88 giây) và một bộ nội dung đăng YouTube mẫu. Không kèm video nguồn |
+| `examples/` | Năm dự án thật (clip 40 giây, video 2 phút, ba trailer 55, 88 và 89 giây) và một bộ nội dung đăng YouTube mẫu. Không kèm video nguồn |
 | `assets/` | Font và model tách người |
 
 ## Bên thứ ba

@@ -4,6 +4,7 @@ For a request in the style of a film trailer: "kiểu trailer phim", "có twist"
 
 - `examples/ai-agent-trailer/` (88 s, plus `thumbs.py`) is the one to copy. It is the cut after the user's notes: the camera's colour with no darkening, titles on dark pills, wide shots only, the good lines kept, and a funny call to follow. One design renders both the TikTok cut and a 16:9 YouTube version.
 - `examples/vibe-code-trailer/` (55 s) was the first. Its shape and its score are still good, but it darkens the sky and the room, which the user later rejected.
+- `examples/mcp-trailer/` (89 s, TikTok only) explains a term letter by letter, with a card for each letter as a chapter. It plays her question and her reaction to the twist as a split screen, him on top and her below: a layout the user asked for on that video and then approved for the skill.
 
 Trailers are made for TikTok first, usually 45-90 s. Length comes second to what is said: keep the lines people would quote and the warm analogies, even past 60 s. The user rejected a cut that dropped "em biết quét nhà" to stay under a minute. The kit also renders 16:9: the bars become a letterbox and the captions sit on the lower bar like film subtitles. Before delivering a 16:9 version, give every hand-placed element a `pick()` position and review YouTube stills. The AI agent example shows what moved, and keeps its TikTok values unchanged:
 - **Chips and kickers** ride in the sky band at y 215, above the depth words, which sit around y 310-480 on 16:9.
@@ -45,6 +46,8 @@ Facts on cards (dates, names) are checked like captions. Karpathy named vibe cod
 **Colour stays the user's choice** (default `iphone`), and the picture stays as shot. The film feel comes from the bars, the cards and the rhythm, not from a grade and not from darkening. On iPhone footage the user read `top_fade()` and `dim_room()` as haze ("mờ và nhòe"), so they are opt-in, for a user who asks for a moodier picture. Text over a bright sky sits on `pill_text()`. A counter or HUD sits on its own dark plate.
 
 **Shots stay wide.** Give every clip `"shot": "wide"` and leave `PUNCHES` empty. A vertical cut of a 1080p source is already a 1.78x blow-up, and the user does not want close faces. A cutaway to the listener is a wide shot of them (`SHOT_OVERRIDES` with `W_wide`).
+
+**Two people on camera: a split screen where both faces matter.** The hook question and the reaction to the twist work well as `split_screen()`, the man on top and the woman below, with the captions on the seam. Keep each split to a line or two, on cuts. The design playbook (section 6) has the details, and `examples/mcp-trailer/` does both.
 
 ## Cut: `select.json`
 
@@ -97,6 +100,6 @@ The mix then goes through a limiter and a two-pass loudness pass to -14 LUFS and
 
 ## Check
 
-- **Stills at both edges of every card**, 0.05 s before and after, on the flash frames, and through the twist. Then `review.py seq` around each card in the render.
+- **Stills at both edges of every card**, 0.05 s before and after, on the flash frames, and through the twist. Then `review.py seq` around each card and each split screen edge in the render.
 - **You cannot hear the score.** Ask the user to listen to the braam under the key line and to the drive under the speech.
 - **Send the 1080p preview** that `finish.py` writes. The user judges the edit on a phone.

@@ -90,6 +90,42 @@ def build_segments():
 SEGS = build_segments()
 
 
+# ----------------------------------------------------------------------------
+# split screen (story.split_screen, vertical formats): one speaker per half, each with a camera of its own
+# ----------------------------------------------------------------------------
+def near_split(tb, pad=0.3):
+    """no whip pan next to a split edge: the split would cut it in half."""
+    return any(abs(tb - sp[0]) < pad or abs(tb - sp[1]) < pad for sp in D.SPLIT)
+
+
+def split_frame(spk):
+    """(source centre x, centre y, source height one half shows): the design's SPLIT_FRAME, else the face about a
+    third of the way down the half, a touch wider than the single shot (never a tight face shot)."""
+    if spk in D.SPLIT_FRAME:
+        return D.SPLIT_FRAME[spk]
+    fx, fy, _ = E.FACE[spk]
+    h_src = 1.04 * (H / 2) / E.BASE
+    return fx, fy + 0.15 * h_src, h_src
+
+
+def split_cams(t, sp):
+    """-> [(cam, rect)] for the top and the bottom half: a slow push-in and a little handheld drift in each."""
+    a, b, top, bottom = sp
+    out = []
+    for k, spk in enumerate((top, bottom)):
+        cx, cy, h_src = split_frame(spk)
+        s = (H / 2) / h_src * (1 + 0.025 * E.ease_in_out_sine(E.clamp01((t - a) / max(0.5, b - a))))
+        s = max(s, W / E.SRC_W, (H / 2) / E.SRC_H)          # a half never shows more than the source has
+        ph = 1.7 * k
+        cx += 1.4 * math.sin(2 * math.pi * 0.19 * t + 0.7 + ph) + 0.6 * math.sin(2 * math.pi * 0.51 * t + 2.1 + ph)
+        cy += 0.9 * math.sin(2 * math.pi * 0.16 * t + 1.3 + ph)
+        w_src, h_src = W / s, (H / 2) / s
+        cx = min(max(cx, w_src / 2), E.SRC_W - w_src / 2)
+        cy = min(max(cy, h_src / 2), E.SRC_H - h_src / 2)
+        out.append(((cx, cy, s / E.BASE, W / 2, (k + 0.5) * H / 2), (0, k * H / 2, W, (k + 1) * H / 2)))
+    return out
+
+
 def seg_at(t):
     for i, s in enumerate(SEGS):
         if s[0] <= t < s[1]:
@@ -158,7 +194,7 @@ def camera(t):
         if 0 < j < len(SEGS):
             tb = SEGS[j][0]
             sa, sb = SEGS[j - 1][2], SEGS[j][2]
-            if E.SHOTS[sa]["spk"] != E.SHOTS[sb]["spk"] and tb - WHIP_PRE <= t < tb + WHIP_POST:
+            if E.SHOTS[sa]["spk"] != E.SHOTS[sb]["spk"] and tb - WHIP_PRE <= t < tb + WHIP_POST and not near_split(tb):
                 u = (t - (tb - WHIP_PRE)) / (WHIP_PRE + WHIP_POST)
                 e = E.ease_in_out_cubic(u)
                 A_, B_ = E.shot_cam(sa), E.shot_cam(sb)
@@ -212,6 +248,7 @@ class Ctx:
         self.cap_y = D.CAP_Y
         self.pip = 0.0
         self.pip_rect = None
+        self.split = False
 
 
 FINISH = None
@@ -248,16 +285,24 @@ def make_leak():
 LEAK = make_leak()
 
 
-def scrim_u8():
-    y0, y1 = max(0, (D.CAP_Y - 230)) * SS, min(H, D.CAP_Y + 190) * SS
+def scrim_u8(cap_y):
+    y0, y1 = int(max(0, (cap_y - 230)) * SS), int(min(H, cap_y + 190) * SS)
     yy, xx = np.mgrid[y0:y1, 0:OW].astype(np.float32)
     rx, ry = D.SCRIM_R
-    d = ((xx / SS - W / 2) / rx) ** 2 + ((yy / SS - (D.CAP_Y - 22)) / ry) ** 2
+    d = ((xx / SS - W / 2) / rx) ** 2 + ((yy / SS - (cap_y - 22)) / ry) ** 2
     m = np.clip((1 - 0.30 * np.exp(-d * 1.6)) * 255, 0, 255).astype(np.uint8)
     return y0, y1, cv2.merge([m, m, m])
 
 
-SC_Y0, SC_Y1, SCRIM = scrim_u8()
+_SCRIMS = {}
+
+
+def scrim_for(cap_y):
+    """the soft shade behind the captions, wherever they sit this frame (a split screen moves them to the seam)."""
+    k = int(round(cap_y))
+    if k not in _SCRIMS:
+        _SCRIMS[k] = scrim_u8(k)
+    return _SCRIMS[k]
 
 
 def warp_view(frame, cam, rect, speed, p):
@@ -343,30 +388,43 @@ def compose(frame, src_f, t, f, ctx):
     if src_f is not None:
         E.use_take(src_f / FPS)
     cam, speed, ov_a, pp, rect = camera(t)
+    sp = D.split_at(t)
+    cams = split_cams(t, sp) if sp is not None else None
+    if cams:
+        speed, ov_a, pp, rect = 0.0, 1.0, 0.0, (0, 0, W, H)
     ctx.reset()
-    ctx.cam = cam
-    ctx.pip, ctx.pip_rect = pp, (rect if pp > 0 else None)
     ctx.spk = E.SHOTS[SEGS[seg_at(t)][2]]["spk"]
+    ctx.split = bool(cams)
+    # in a split, scene-locked drawing (depth words, anc(), head()) follows the half the speaker is in
+    ctx.cam = cams[sp[2:].index(ctx.spk) if ctx.spk in sp[2:] else 0][0] if cams else cam
+    ctx.pip, ctx.pip_rect = pp, (rect if pp > 0 else None)
     for L in (ctx.behind, ctx.mid, ctx.front, ctx.ui):
         L.begin()
     D.draw(ctx, t)
-    view, M, vbox = warp_view(frame, cam, rect, speed, pp)
-    x0, y0, x1, y1 = vbox
+    if cams:
+        tiles = [warp_view(frame, cam_k, rect_k, 0.0, 0.0) for cam_k, rect_k in cams]
+    else:
+        tiles = [warp_view(frame, cam, rect, speed, pp)]
     bp, bb = ctx.behind.pixels()
-    if bp is not None:
+    m = E.load_matte(src_f) if (bp is not None and src_f is not None) else None
+    # the behind layer goes behind the person in each tile, through that tile's own view of the matte
+    for view_k, M_k, (x0, y0, x1, y1) in (tiles if bp is not None else []):
         ix0, iy0, ix1, iy1 = max(bb[0], x0), max(bb[1], y0), min(bb[2], x1), min(bb[3], y1)
         if ix1 > ix0 and iy1 > iy0:
             ov = bp[iy0:iy1, ix0:ix1]
             if ov_a < 1.0:
                 ov = cv2.multiply(np.ascontiguousarray(ov), np.full_like(ov, int(255 * ov_a)), scale=1 / 255.0)
-            sub = view[iy0 - y0:iy1 - y0, ix0 - x0:ix1 - x0]
-            m = E.load_matte(src_f) if src_f is not None else None
+            sub = view_k[iy0 - y0:iy1 - y0, ix0 - x0:ix1 - x0]
             if m is not None:
-                mt = E.matte_to_view(m, M, (x1 - x0, y1 - y0))[iy0 - y0:iy1 - y0, ix0 - x0:ix1 - x0]
+                mt = E.matte_to_view(m, M_k, (x1 - x0, y1 - y0))[iy0 - y0:iy1 - y0, ix0 - x0:ix1 - x0]
                 E.behind_premul(sub, ov, mt)
             else:
                 E.over_premul(sub, ov)
-    base = pip_stage(frame, view, vbox, ctx, pp) if pp > 0 else view
+    if cams:
+        base = np.ascontiguousarray(np.vstack([v for v, _, _ in tiles]))
+    else:
+        view, M, vbox = tiles[0]
+        base = pip_stage(frame, view, vbox, ctx, pp) if pp > 0 else view
     if ctx.cctv > 0:
         base = apply_cctv(base, ctx.cctv)
     if ctx.leak is not None and not NATURAL:
@@ -392,7 +450,8 @@ def compose(frame, src_f, t, f, ctx):
         if mp is not None:
             E.over_premul(base[mb[1]:mb[3], mb[0]:mb[2]], mp[mb[1]:mb[3], mb[0]:mb[2]])
     if ctx.caption_box is not None:
-        base[SC_Y0:SC_Y1] = cv2.multiply(base[SC_Y0:SC_Y1], SCRIM, scale=1 / 255.0)
+        sy0, sy1, scr = scrim_for(ctx.cap_y)
+        base[sy0:sy1] = cv2.multiply(base[sy0:sy1], scr, scale=1 / 255.0)
     base = get_finish()(base, f)
     fp, fb = ctx.front.pixels()
     if fp is not None:
@@ -531,7 +590,7 @@ def signature():
     h = hashlib.sha1(repr(settings).encode())
     here = os.path.dirname(os.path.abspath(__file__))
     files = [os.path.join(E.PROJECT, n) for n in ("design.py", "timeline.json", "project.json", "master_index.json")]
-    files += [os.path.join(here, n) for n in ("engine.py", "story.py", "gfx.py", "render.py")]
+    files += [os.path.join(here, n) for n in ("engine.py", "story.py", "gfx.py", "trailer.py", "render.py")]
     for p in files:
         with open(p, "rb") as fh:
             h.update(fh.read())

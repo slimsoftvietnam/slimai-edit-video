@@ -25,10 +25,10 @@ YT, TK = FMT == "youtube", FMT == "tiktok"
 PROFILES = {
     "youtube": dict(cap_size=58, cap_y=968, cap_maxw=1500, cap_target=21, cap_max=32, scrim=(800, 100), mx=96,
                     top=50, rail=True, end_hold=8.0, stage_x=(120, 1150), stage_cy=500, stage_hmax=640,
-                    card=(1196, 320, 1836, 680)),
+                    card=(1196, 320, 1836, 680), split_cap_y=None),
     "tiktok": dict(cap_size=66, cap_y=1352, cap_maxw=900, cap_target=15, cap_max=24, scrim=(560, 125), mx=70,
                    top=240, rail=False, end_hold=2.8, stage_x=(60, 1020), stage_cy=525, stage_hmax=550,
-                   card=(125, 823, 955, 1290)),
+                   card=(125, 823, 955, 1290), split_cap_y=1000),
 }
 P = PROFILES[FMT]
 MX = P["mx"]
@@ -49,6 +49,8 @@ A = {}                 # named word anchors (output seconds)
 SHOT_OVERRIDES = []    # (t0, t1, shot name)
 PUNCHES = []           # (time, extra zoom fraction, attack, hold, release)
 PIP = []               # (t_in, t_out): speaker shrinks into the card over PIP_T from t_in, grows back from t_out
+SPLIT = []             # (t0, t1, top, bottom): split screen, one speaker per half (split_screen(); vertical only)
+SPLIT_FRAME = {}       # speaker -> (source centre x, centre y, source height one half shows); unset: from the face
 LEAKS = []             # light-leak times
 LABELS = []            # (time, "01", "title"): chapter rail, YouTube only
 YT_CHAPTERS = []       # (time, title) for the description; YouTube needs >= 10 s per chapter
@@ -205,6 +207,23 @@ def panel(ctx, t, t0, t1, h, r=44, accent=None):
 def diagram(t_in, t_out):
     """register a PiP window for a diagram that lives in [t_in + 0.3, t_out]."""
     PIP.append((t_in, t_out))
+
+
+def split_screen(t0, t1, top=None, bottom=None):
+    """both speakers at once from t0 to t1 (output s), one per half: `top` above, `bottom` below (default the man
+    "M" on top and the woman "W" below, else the first two speakers). Vertical formats only: 16:9 already shows both
+    in its two-shot. The captions sit on the seam meanwhile; render.py frames each half (SPLIT_FRAME)."""
+    SPLIT.append((t0, t1, top, bottom))
+
+
+def split_at(t):
+    """the split screen running at t, (t0, t1, top, bottom), else None. Edges snap to the nearest frame the way cuts
+    do, so a split that starts on a cut starts on the cut's first frame."""
+    f = round(t * FPS)
+    for sp in SPLIT:
+        if round(sp[0] * FPS) <= f < round(sp[1] * FPS):
+            return sp
+    return None
 
 
 @functools.lru_cache(maxsize=None)
@@ -428,7 +447,8 @@ def build_lines():
     chunks, cur = [], []
     for w in words:
         cap_start = w["t"][:1].isupper() and w["t"] not in keep
-        if cur and (cur[-1]["end_punct"] or w["s"] - cur[-1]["e"] > 0.6 or w["spk"] != cur[-1]["spk"] or cap_start):
+        if cur and (cur[-1]["end_punct"] or w["s"] - cur[-1]["e"] > 0.6 or w["spk"] != cur[-1]["spk"] or cap_start
+                    or split_at(w["s"]) != split_at(cur[-1]["s"])):
             chunks.append(cur)
             cur = []
         cur.append(w)
@@ -453,11 +473,20 @@ def build_lines():
             if lw in KEEP_CASE:
                 disp = KEEP_CASE[lw] + ("?" if disp.endswith("?") else "")
             x["disp"] = disp
+    # a split screen moves the captions to the seam, so no line is shown across a split's edge: it would jump.
+    # Each edge sits half a frame before the frame where split_at() changes.
+    edges = sorted({(round(e * FPS) - 0.5) / FPS for sp in SPLIT for e in sp[:2]})
     for i, ln in enumerate(out):
+        s0 = ln[0]["s"]
         nxt = out[i + 1][0]["s"] if i + 1 < len(out) else 1e9
-        ln_end = min(nxt - 0.02, ln[-1]["e"] + 0.7)
+        ln_start, ln_end, cut = s0 - 0.06, min(nxt - 0.02, ln[-1]["e"] + 0.7), False
+        for e in edges:
+            if ln_start < e <= s0:
+                ln_start = e
+            if s0 < e <= ln_end:
+                ln_end, cut = e, True       # leaves with the picture's cut instead of fading out before it
         for x in ln:
-            x["line_end"] = ln_end
+            x["line_start"], x["line_end"], x["line_cut"] = ln_start, ln_end, cut
     return out
 
 
@@ -466,7 +495,7 @@ def draw_captions(ctx, t):
         return
     ln = None
     for L in LINES:
-        if L[0]["s"] - 0.06 <= t <= L[0]["line_end"]:
+        if L[0]["line_start"] <= t <= L[0]["line_end"]:
             ln = L
     if ln is None:
         return
@@ -485,7 +514,7 @@ def draw_captions(ctx, t):
     total += sp * (len(items) - 1)
     sc = min(1.0, P["cap_maxw"] / total) if total > 0 else 1.0
     xx = W / 2 - total * sc / 2
-    end_v = clamp01((ln[0]["line_end"] - t) / 0.1)
+    end_v = 1.0 if ln[0]["line_cut"] else clamp01((ln[0]["line_end"] - t) / 0.1)
     for (x, f, rgb, w) in items:
         k = clamp01((t - (x["s"] - 0.05)) / 0.16)
         if k <= 0:
@@ -533,7 +562,7 @@ def chapter_rail(ctx, t):
 # frame
 # ----------------------------------------------------------------------------
 def draw(ctx, t):
-    ctx.cap_y = CAP_Y
+    ctx.cap_y = P["split_cap_y"] if split_at(t) else CAP_Y
     for fn in PRE:
         fn(ctx, t)
     for (t0, t1, fn) in EVENTS:
@@ -600,11 +629,33 @@ def _auto_cues():
                 direction=-1 if names.index(CLIPS[i]["spk"]) % 2 else 1)
 
 
+def _resolve_splits():
+    """name each split's top and bottom speaker; 16:9 keeps its two-shot, so it drops the splits."""
+    if not TK:
+        SPLIT.clear()
+        return
+    names = list(FACE)
+    if SPLIT and len(names) < 2:
+        raise SystemExit("split_screen() needs two speakers in project.json")
+    default = ("M", "W") if {"M", "W"} <= set(names) else tuple(names[:2])
+    for i, sp in enumerate(SPLIT):
+        t0, t1, *rest = sp
+        top, bottom = (list(rest) + [None, None])[:2]
+        # with one name given, the other half gets the other speaker
+        top = top or next(n for n in default if n != bottom)
+        bottom = bottom or next(n for n in default + tuple(names) if n != top)
+        if top not in names or bottom not in names or top == bottom:
+            raise SystemExit(f"split_screen({t0}, {t1}): top {top!r} and bottom {bottom!r} must be two of {names}")
+        SPLIT[i] = (t0, t1, top, bottom)
+    SPLIT.sort()
+
+
 def load_design():
     """import the project's design.py (it registers everything above), then build what depends on it."""
     global LINES
     sys.path.insert(0, PROJECT)
     import design  # noqa: F401  (project file)
     PIP.sort()
+    _resolve_splits()
     _auto_cues()
     LINES = build_lines()

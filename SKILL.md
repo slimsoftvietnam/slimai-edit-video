@@ -100,6 +100,8 @@ Rerun both after any change to the selected clips (`matte.py` skips frames it al
 
 Read `references/design-playbook.md` before writing it. Copy the shape of `examples/cowork-40s/design.py`, which is short enough to read in one go; `examples/repo-ai-agent/design.py` shows many more recipes on a 2-minute edit. Format differences go through `pick(youtube, tiktok)` and `place(ctx, yt, tk)`, so there is a single story and no second file to keep in sync. A trailer adds `from trailer import *` (curtain cards, flash frames, pills for text over the sky, the typed prompt, the title slam) and registers its score with `score()`; copy the shape of `examples/ai-agent-trailer/design.py`. Take times from `word_in(beat, word)`, `beat_start(beat)` and `beat_end(beat)`, so a recut does not move them.
 
+When two people are on camera and the listener's face matters, as in a question or a reaction to the twist, the TikTok cut can show both at once. `split_screen(t0, t1)` puts the man on top and the woman below, a layout the user asked for. Keep it to a line or two, on cuts (playbook, section 6; `examples/mcp-trailer/`).
+
 ### 5. Review stills, fix, repeat
 
 ```bash
@@ -109,7 +111,7 @@ python <skill>/scripts/render.py --project PROJECT --fmt youtube --stills DIR2 a
 python <skill>/scripts/review.py stills DIR2 SHEET2 3 3 640
 ```
 
-`auto` gives two stills per event. Read every sheet. Then check transitions with explicit times every 0.1 s around a PiP entry and a speaker change. Look for: words on a head or clipped by the frame, chips on a face, overlaps, stale text, captions under the PiP card, a speaker framed too tight. This loop is cheap, so run it until nothing bothers you before starting a long render.
+`auto` gives two stills per event. Read every sheet. Then check transitions with explicit times every 0.1 s around a PiP entry, a speaker change and a split screen edge. Look for: words on a head or clipped by the frame, chips on a face, overlaps, stale text, captions under the PiP card, a speaker framed too tight. This loop is cheap, so run it until nothing bothers you before starting a long render.
 
 ### 6. Sound
 
@@ -183,4 +185,4 @@ These come from real feedback on real edits. The reasons matter when a new video
 - `references/platforms.md`: delivery specs, upload settings, and the YouTube publishing kit: keywords, titles for Test & Compare, description, tags. Read before writing the kit.
 - `references/trailer.md`: the trailer style: its shape, cards and gaps, the twist, the kit and the score. Read before cutting a trailer.
 - `references/gotchas.md`: hard-won failures of the toolchain. Read when something breaks.
-- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format. `examples/ai-agent-trailer/` is an 88 s trailer with its TikTok cut and its 16:9 YouTube version from one design, the one to copy (`select.json`, `design.py`, `thumbs.py`), and `examples/vibe-code-trailer/` an earlier 55 s TikTok-only one.
+- `examples/cowork-40s/`, `examples/repo-ai-agent/`: real projects (`select.json`, `design.py`, `thumbs.py`). The second also has an earlier YouTube kit; `examples/vibe-code/youtube_kit.txt` is a kit in the current format. `examples/ai-agent-trailer/` is an 88 s trailer with its TikTok cut and its 16:9 YouTube version from one design, the one to copy (`select.json`, `design.py`, `thumbs.py`), and `examples/vibe-code-trailer/` an earlier 55 s TikTok-only one. `examples/mcp-trailer/` is an 89 s TikTok trailer that spells a term out letter by letter and shows both people in a split screen.

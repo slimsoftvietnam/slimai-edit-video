@@ -9,7 +9,7 @@ How to write a project's `design.py`. It does `from story import *`, registers e
 3. Layers: where to draw
 4. Safe zones per format
 5. Components
-6. Camera, PiP and transitions
+6. Camera, PiP, split screen and transitions
 7. Sound cues and music
 8. Recipes
 9. Checklist before a long render
@@ -49,6 +49,8 @@ Registries:
 | `SHOT_OVERRIDES` | `(t0, t1, "M_close")` | force a shot; names are `{spk}_{wide,med,close}`, `TWO_{spk}` |
 | `PUNCHES` | `(t, amount, attack, hold, release)` | brief zoom on a word; amount 0.04-0.05 is enough |
 | `PIP` | `(t_in, t_out)` | speaker shrinks over `PIP_T` from `t_in`, grows back from `t_out` |
+| `SPLIT` (via `split_screen(t0, t1, top=None, bottom=None)`) | `(t0, t1, top, bottom)` | both people at once, one per half, TikTok only; section 6 |
+| `SPLIT_FRAME` | `{spk: (cx, cy, h)}` | optional: what a half shows of that person, in source px; section 6 |
 | `LEAKS` | `t` | warm light leak, good at chapter changes |
 | `LABELS` | `(t, "02", "title")` | chapter rail (YouTube only) |
 | `YT_CHAPTERS` | `(t, "title")` | description chapters: starts at 0:00, at least 3, each at least 10 s |
@@ -67,6 +69,7 @@ Everything is drawn in layout px: 1080x1920 or 1920x1080. Layers scale to device
 - `anc(ctx, dx, dy, spk=None)` -> screen point (dx, dy) source px from the face. Scene-locked, so it follows cuts and punches.
 - `place(ctx, (dx, dy, anchor), (x, y, anchor), spk=None)` -> YouTube uses the scene-locked offset (space beside the speaker), TikTok a screen position (the free zone above the head). Returns `(x, y, anchor)`.
 - `ctx.spk` = current speaker, `ctx.cam` = camera, `ctx.pip` = PiP amount 0..1, `ctx.pip_rect` = the view rectangle.
+- `ctx.split` is True while a split screen runs. `ctx.cam` is then the camera of the speaker's own half, so `head()`, `anc()` and depth words land in that half.
 
 ## 3. Layers: where to draw
 
@@ -95,6 +98,7 @@ Profiles live in `story.PROFILES`.
 - PiP layout: panel area x 60-1020, y centred on 525, up to 550 tall. Speaker card x 125-955, y 823-1290 (the whole two-shot at 16:9). Caption below it.
 - Chips stack in the zone above the head at y ~250, 345, 440, usually two at most.
 - Depth word size 200-300, `max_w` is capped by the margins automatically.
+- Split screen: the seam is at y 960 and the captions sit on it (baseline 1000). Text goes over the top person's legs (y ~760-900) or behind the bottom person's head (baseline ~1230), never over a face.
 
 **YouTube 1920x1080.**
 
@@ -146,13 +150,33 @@ Lay out inner content proportionally to `h`, adding `dy` to every y, because the
 
 Colour language: mint = the good thing, the concept being taught. Amber = emphasis and memory. Coral = the problem or mistake. Sky = neutral secondary.
 
-## 6. Camera, PiP and transitions
+## 6. Camera, PiP, split screen and transitions
 
 The camera comes from the clip's `shot` in `select.json`, with slow push-ins and small jump-cut punches, all compressed above a knee so that nothing becomes a tight face shot. Tables are in `engine._TABLE`. Keep their deliberately wide values.
 
 Picture-in-picture morphs the view rect into the card while the source window glides to what the card shows. On vertical it opens from the 9:16 crop to the entire wide shot. Everything is scene-locked, so a depth word on screen morphs along with it.
 
 Use a PiP when a diagram needs the screen, never a zoom. Up to about a third of screen time works (the worked example uses 35%), in windows of 3-9 s with the speaker back at full size between them. Longer starts to feel like slides.
+
+### Split screen (TikTok)
+
+The vertical single shot shows one person. When the other person's face is the point, show both: a question and the first beat of its answer, a reaction to the twist, a disagreement. `split_screen(t0, t1)` puts the man (`"M"`) in the top half and the woman (`"W"`) below. The user asked for this layout. Pass `top=` and `bottom=` for other names. `examples/mcp-trailer/design.py` uses it twice: her question (5.6 s) and her "À" at the twist (1.5 s).
+
+```python
+split_screen(0.0, beat_end("hook"))                     # her question, him listening on top
+split_screen(beat_start("aha"), beat_end("aha"))        # her reaction to the twist
+SPLIT_FRAME.update({"M": (1190, 668, 560), "W": (665, 621, 560)})   # optional framing, source px
+```
+
+- **Keep splits short, a line or two.** The single shot carries the explanation, because it has room for depth words and diagrams.
+- **Start and end on cuts.** `beat_start()` and `beat_end()` give the edges. They snap to frames the way cuts do. The layout changes on the cut, and whip pans next to a split edge are skipped.
+- **Framing.** Each half has its own camera with a slow push-in and a little drift. By default a half frames its person a touch wider than the single shot, with the face about a third of the way down. `SPLIT_FRAME` sets `(centre x, centre y, height)` of what a half shows, in source px. On a 1080p source, a height of 560 is about the single shot's blow-up. A smaller height is closer, and the user does not want close faces.
+- **What is automatic.**
+  - The captions and their shade move to the seam.
+  - A caption line never crosses a split edge: it leaves on the cut.
+  - `ctx.behind` goes behind the person in each half.
+- **Placing text.** Free placement is often simplest. The example puts "MCP?" (`big_text` on `ctx.behind`) behind her head at y 1232, and chat chips over his legs at y 765-880.
+- **Limits.** No PiP during a split. A 16:9 render ignores splits, because its two-shot already shows both people.
 
 ## 7. Sound cues and music
 
@@ -194,6 +218,7 @@ The first downbeat lands on `drop`, preceded by a tense two-bar intro. Sections 
 - **Rollback.** Timeline v1 v2 v3, a ring travels back on the word, a check appears after it lands.
 - **Analogy.** Change the grade with the words: `ctx.cctv` plus REC frame for "camera giám sát".
 - **Collapse.** Chips for each item fly into a single icon on "cũng được".
+- **Question and reaction.** A split screen (section 6): her question with the key word behind her head and the question as chat chips over his legs; later her "À" at the twist, with the equation it lands ("HTTP = MCP") over his legs.
 - **Takeaway.** The one line to remember, plus the action.
 
 ## 9. Checklist before a long render
@@ -204,4 +229,5 @@ The first downbeat lands on `drop`, preceded by a tense two-bar intro. Sections 
 - Vietnamese stacked diacritics (Ấ, Ế, Ỗ) not clipped at the top.
 - YouTube rail labels do not collide with panels or depth words.
 - Captions do not touch the card in the TikTok PiP layout.
+- Every split screen starts and ends on a cut. Stills on both sides of each edge and in the middle show no text on a face, and the captions on the seam clear of both heads.
 - `YT_CHAPTERS` validates (`export_captions.py` warns).
