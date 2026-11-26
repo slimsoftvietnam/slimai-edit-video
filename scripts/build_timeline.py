@@ -11,6 +11,10 @@ select.json:
   gap_after: seconds of silence after the clip, for a black title card in a trailer cut (references/trailer.md);
   timeline.json lists them under "gaps" as [t0, t1, beat].
   fixes: (approx source time, heard word, correct word); "" deletes a word from the captions.
+  keep_pauses: true (for the whole file, or on one clip) keeps every pause inside a clip as cut; by default pauses of
+  0.3 s or more are shortened to 0.12 s. The vlog style sets it: beat_fit.py has already timed each pause to the beat.
+  extra: [[source second, frames], ...] source ranges the master must hold although no clip plays them, such as B-roll
+  that the design draws over a speaking clip (vlog.py overlays); timeline.json passes them on to build_master.py.
 """
 import json
 import os
@@ -120,7 +124,8 @@ for c_ in sel["clips"]:
     ra = hard.get("a", refine_start(a, word_bounds(a, "prev")))
     rb = hard.get("b", refine_end(b, word_bounds(b, "next")))
     n0 = len(clips)
-    for k, (x, y) in enumerate(split_pauses(ra, rb)):
+    keep = sel.get("keep_pauses") or c_.get("keep_pauses")
+    for k, (x, y) in enumerate([(ra, rb)] if keep else split_pauses(ra, rb)):
         clips.append({"src_in": round(x, 3), "src_out": round(y, 3), "spk": c_["spk"], "beat": c_.get("beat", ""),
                       "shot": f"{c_['spk']}_{c_.get('shot', 'med')}", "first_of_sel": k == 0})
     if c_.get("gap_after") and len(clips) > n0:
@@ -181,8 +186,10 @@ for c in clips:
                       "e": round(max(e_, s_ + 0.06), 3), "spk": c["spk"], "beat": c["beat"]})
 words.sort(key=lambda d: d["s"])
 
-json.dump({"fps": FPS, "duration": round(t_out, 4), "clips": clips, "words": words, "gaps": gaps},
-          open(os.path.join(proj, "timeline.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+out = {"fps": FPS, "duration": round(t_out, 4), "clips": clips, "words": words, "gaps": gaps}
+if sel.get("extra"):
+    out["extra"] = [[float(t), int(n)] for (t, n) in sel["extra"]]
+json.dump(out, open(os.path.join(proj, "timeline.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print(f"{len(clips)} sub-clips, duration {t_out:.2f}s")
 for g in gaps:
     print(f"  gap after {g[2]}: {g[0]:.2f} - {g[1]:.2f}")

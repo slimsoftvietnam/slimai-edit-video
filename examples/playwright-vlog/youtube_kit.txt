@@ -1,0 +1,84 @@
+BỘ NỘI DUNG ĐĂNG YOUTUBE: "Playwright là gì?" (4:44)
+Video: 16_Playwright_YouTube_HD_v1.mp4 (màu phim ấm)
+Thumbnail: 16_Playwright_YouTube_HD_v1_thumbnail_A.jpg (dùng chính), 16_Playwright_YouTube_HD_v1_thumbnail_B.jpg (để thử)
+Phụ đề: 16_Playwright_YouTube_HD_v1.srt
+
+
+=== TIÊU ĐỀ: 3 bản cho Thử nghiệm và so sánh ===
+[1] Playwright là gì? Cách AI tự mở web, tự bấm, tự gõ như người
+    Dùng bản này nếu chỉ chọn một: video mở đầu đúng bằng câu hỏi này, người bấm vào thấy ngay lời hứa được giữ.
+[2] AI điều khiển máy tính bằng cách nào? Giải thích Playwright dễ hiểu
+    Rõ ràng nhất cho người gõ tìm "ai điều khiển máy tính".
+[3] Playwright là gì? AI đọc mã chứ không nhìn màn hình, lại đỡ tốn token
+    Thử góc "điều bất ngờ": AI không cần nhìn mà vẫn bấm đúng nút.
+
+
+=== MÔ TẢ (copy từ dòng dưới đến hết hashtag) ===
+Playwright là gì? AI điều khiển máy tính, tự mở web, tự bấm, tự gõ bằng cách nào: giải thích dễ hiểu trong 5 phút.
+
+AI bây giờ có thể tự điều khiển máy tính của mình: tự mở web, tự bấm, tự gõ. Vậy làm sao nó làm được như thế, và nó có "nhìn" màn hình như người không?
+
+Trong video:
+• AI có hai chế độ điều khiển máy tính: chỉ riêng trình duyệt, và computer use (toàn bộ máy tính, mọi phần mềm). Video này nói về trình duyệt.
+• Playwright là một thư viện giúp AI thao tác trên trình duyệt như người: đăng nhập, mở tab mới, điền thông tin, nhập văn bản.
+• Vì sao tên là "playwright" (nhà biên kịch): nó biến một việc thành kịch bản từng bước. Ví dụ đăng nhập: mở đường link, điền username, nhập password, ấn nút login. Lần sau chỉ cần chạy lại kịch bản.
+• AI có nhìn màn hình không: Playwright không chụp ảnh màn hình để tìm nút. Nó đọc mã HTML của trang web, biết đâu là nút login, đâu là ô nhập username, rồi tác động bằng JavaScript.
+• Ví dụ tự động gửi tin nhắn Zalo: đăng nhập Zalo web, tìm người cần nhắn, nhắn tin.
+• Có tốn token không: lần đầu AI phải suy luận để viết kịch bản. Từ lần sau kịch bản tự chạy nên tiết kiệm token hơn rất nhiều. Gửi cho 20 người là chạy kịch bản 20 lần, không phải hỏi AI 20 lần.
+
+Nếu bạn đang tìm cách tự động hóa bằng AI những việc lặp lại trên trình duyệt, đây là khái niệm nên hiểu trước tiên.
+
+CHƯƠNG
+0:00 AI tự điều khiển máy tính bằng cách nào?
+0:33 Playwright là gì?
+0:54 Vì sao gọi là “nhà biên kịch”: kịch bản 4 bước
+1:38 AI có nhìn màn hình không? Đọc mã chứ không nhìn
+2:48 Playwright làm được gì: ví dụ nhắn tin Zalo
+3:32 Dùng Playwright có tốn token không?
+4:21 Cách nhận skill Playwright điều khiển Zalo
+
+Muốn nhận skill dùng Playwright điều khiển Zalo: comment "Playwright" ở phần bình luận nhé.
+Việc nào trên trình duyệt bạn muốn AI làm thay nhất? Viết ở phần bình luận.
+Đăng ký kênh để xem tiếp các video về AI cho người đi làm.
+
+#Playwright #AI #TuDongHoa
+
+
+=== THẺ (dán vào ô Thẻ) ===
+playwright, playwright là gì, playwright la gi, ai điều khiển máy tính, ai dieu khien may tinh, ai tự động hóa, ai tu dong hoa, tự động hóa bằng ai, tự động hóa trình duyệt, computer use, playwright automation, tự động gửi tin nhắn zalo, tu dong gui tin nhan zalo, tiết kiệm token, ai tự động làm việc
+
+
+=== BÌNH LUẬN GHIM ===
+Comment "Playwright" để nhận skill dùng Playwright điều khiển Zalo nhé. Chữ này khó viết đúng lắm: p-l-a-y-w-r-i-g-h-t.
+Còn bạn, việc nào trên trình duyệt bạn muốn AI làm thay nhất?
+Ví dụ: "Mỗi sáng tự đăng nhập hệ thống và tải báo cáo về."
+
+
+=== KHI ĐĂNG ===
+- Thử nghiệm và so sánh (Test & compare), làm trong YouTube Studio trên máy tính:
+  Vòng 1: nhập cả 3 tiêu đề, dùng thumbnail A. YouTube chọn bản thắng theo thời gian xem, thường mất 1-2 tuần.
+  Vòng 2: giữ tiêu đề thắng, thử thumbnail A với B.
+  Kênh chưa có tính năng này: dùng tiêu đề [1] với thumbnail A.
+- Phụ đề: tải 16_Playwright_YouTube_HD_v1.srt (tiếng Việt, đã sửa chữ).
+- Màn hình kết thúc: 7 giây cuối để trống nửa phải, đặt 1 video gợi ý và nút Đăng ký vào đó.
+- Playlist có từ khóa, ví dụ "AI cho người đi làm".
+- Danh mục: Khoa học và công nghệ. Ngôn ngữ video và tiêu đề: Tiếng Việt.
+- Nội dung bị thay đổi hoặc tổng hợp (Altered content): Không. Video chỉ cắt ghép, thêm đồ họa minh họa và nhạc do code viết, không làm giả người hay sự kiện.
+- Dành cho trẻ em: Không.
+- Giờ đăng: trong Analytics, tab Đối tượng, xem biểu đồ giờ người xem của kênh có mặt trên YouTube; đăng trước giờ đông nhất 1-2 tiếng.
+- Giờ đầu: ghim bình luận ở trên, trả lời những bình luận đầu tiên. Chưa đánh giá độ nét lúc này vì YouTube xử lý bản độ phân giải thấp trước.
+
+
+=== GHI CHÚ ===
+- Từ khóa lấy từ gợi ý tìm kiếm của YouTube Việt Nam (25/11/2026): "playwright là gì", "ai điều khiển máy tính", "ai tự động hóa", "tự động hóa bằng ai", "ai tự động làm việc", "tự động gửi tin nhắn zalo", "tiết kiệm token", "playwright automation".
+- Không đưa Claude, ChatGPT, MCP, Claude Code vào tiêu đề và thẻ dù được tìm nhiều ("playwright mcp là gì", "playwright claude code", "cách dùng claude ai điều khiển máy tính"), vì bản dựng này không nhắc tới: YouTube coi đó là siêu dữ liệu gây hiểu lầm, và người tìm hướng dẫn công cụ sẽ thoát sớm. Đó là chủ đề tốt cho video thực hành sau.
+- Thumbnail A ("AI tự bấm chuột?") không lặp lại chữ của tiêu đề nào. Thumbnail B ("không nhìn mà bấm đúng?") gần với tiêu đề [3], nên đừng ghép B với [3].
+- Dòng "không ai cầm chuột cả" trên thumbnail A và hai chip "mã nguồn mở", "của Microsoft" trong video là do người dựng thêm. Playwright đúng là thư viện mã nguồn mở do Microsoft phát triển.
+- Nguồn về thử nghiệm tiêu đề và cách YouTube phân phối video (trang bên thứ ba, không phải trợ giúp chính thức của YouTube):
+  https://www.searchenginejournal.com/youtube-title-a-b-testing-rolls-out-globally-to-creators/562571/
+  https://vidiq.com/blog/post/youtube-launches-new-title-testing-tool
+  https://gyre.pro/blog/youtubes-new-title-ab-testing-tool-everything-creators-need-to-know
+  https://thumbnailtest.com/news/youtube-releases-title-test-compare/
+  https://outlierkit.com/resources/youtube-viewer-satisfaction-algorithm-2026/
+  https://www.socialpilot.co/blog/youtube-algorithm
+  https://fluxnote.io/guides/youtube-algorithm-2026-how-it-works

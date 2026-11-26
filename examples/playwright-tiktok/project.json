@@ -1,0 +1,49 @@
+{
+ "src_w": 1920,
+ "src_h": 1080,
+ "fps": 30,
+ "transfer": "hlg",
+ "look": "iphone",
+ "language": "vi",
+ "speakers": {
+  "W": {
+   "face": [
+    717,
+    537
+   ],
+   "head_top": 466,
+   "box": [
+    616,
+    462,
+    818,
+    649
+   ]
+  },
+  "M": {
+   "face": [
+    1289,
+    575
+   ],
+   "head_top": 513,
+   "box": [
+    1200,
+    509,
+    1378,
+    673
+   ]
+  }
+ },
+ "matte": {
+  "crop": [
+   500,
+   366,
+   1016,
+   712
+  ],
+  "scale": 2.0
+ },
+ "end_hold": {
+  "tiktok": 5.2
+ },
+ "episode": "16_Playwright"
+}

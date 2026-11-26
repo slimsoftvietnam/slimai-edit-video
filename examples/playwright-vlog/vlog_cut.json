@@ -1,0 +1,56 @@
+{
+ "beat_frames": 22,
+ "card_beats": 2,
+ "end_hold_beats": 4,
+ "clips": [
+  {"beat": "open", "spk": "W", "cut_in": 14.3667, "e": 26.33, "tail_av": 1.8, "adj": true, "chapter": 1},
+  {"beat": "modes", "spk": "M", "s": 28.26, "e": 47.96, "lead_av": 1.8, "tail_av": 0.4, "adj": false},
+  {"beat": "card2", "broll": 334.72, "card": true},
+  {"beat": "lib", "spk": "M", "s": 48.45, "e": 51.0, "lead_av": 0.4, "tail_av": 0.25, "adj": false, "chapter": 2},
+  {"beat": "job", "spk": "M", "s": 55.56, "e": 58.98, "shot": "med", "lead_av": 0.55, "tail_av": 1.2, "adj": true},
+  {"beat": "job2", "spk": "M", "s": 60.26, "e": 62.2, "shot": "med", "lead_av": 1.2, "tail_av": 1.1, "adj": true},
+  {"beat": "examples", "spk": "M", "s": 63.36, "e": 73.31, "lead_av": 1.1, "tail_av": 0.07, "adj": false},
+  {"beat": "card3", "broll": 6.6, "card": true},
+  {"beat": "name", "spk": "M", "cut_in": 74.9, "e": 112.46, "tail_av": 0.75, "adj": false, "chapter": 3},
+  {"beat": "human", "spk": "M", "s": 119.99, "e": 124.44, "shot": "med", "lead_av": 1.5, "tail_av": 1.0, "adj": false},
+  {"beat": "card4", "broll": 353.45, "card": true},
+  {"beat": "see", "spk": "W", "s": 125.57, "e": 130.37, "lead_av": 1.0, "tail_av": 1.55, "adj": true, "chapter": 4},
+  {"beat": "code", "spk": "M", "s": 131.99, "e": 143.31, "lead_av": 1.55, "tail_av": 0.09, "adj": false},
+  {"beat": "tag", "spk": "M", "s": 147.24, "e": 161.17, "shot": "med", "lead_av": 0.36, "tail_av": 0.47, "adj": false},
+  {"beat": "nolook", "spk": "M", "s": 162.55, "e": 175.98, "lead_av": 0.5, "tail_av": 1.0, "adj": true},
+  {"beat": "render", "spk": "M", "s": 177.04, "e": 200.06, "shot": "med", "lead_av": 1.0, "tail_av": 0.7, "adj": false},
+  {"beat": "card5", "broll": 384.2, "card": true},
+  {"beat": "what", "spk": "W", "s": 228.64, "e": 230.88, "lead_av": 0.4, "tail_av": 1.08, "adj": true, "chapter": 5},
+  {"beat": "all", "spk": "M", "s": 232.02, "e": 237.06, "lead_av": 1.08, "tail_av": 0.96, "adj": true},
+  {"beat": "zalo", "spk": "M", "s": 238.08, "e": 245.38, "lead_av": 0.96, "tail_av": 0.24, "adj": false},
+  {"beat": "send", "spk": "M", "s": 247.73, "e": 254.5, "shot": "med", "lead_av": 0.5, "tail_av": 0.58, "adj": true},
+  {"beat": "first", "spk": "M", "s": 255.14, "e": 266.35, "lead_av": 0.58, "tail_av": 0.62, "adj": false},
+  {"beat": "process", "spk": "M", "s": 268.2, "e": 275.61, "shot": "med", "lead_av": 0.14, "tail_av": 0.22, "adj": false},
+  {"beat": "card6", "broll": 355.0, "card": true},
+  {"beat": "token", "spk": "W", "s": 276.44, "e": 281.03, "lead_av": 0.15, "tail_av": 0.32, "adj": true, "chapter": 6},
+  {"beat": "save", "spk": "M", "s": 281.39, "cut_out": 288.87, "lead_av": 0.32, "adj": false},
+  {"beat": "twenty", "spk": "M", "s": 298.37, "e": 312.3, "shot": "med", "lead_av": 0.21, "tail_av": 0.2, "adj": false},
+  {"beat": "think", "spk": "M", "s": 313.54, "e": 326.14, "lead_av": 0.4, "tail_av": 0.23, "adj": false},
+  {"beat": "sum", "spk": "M", "s": 327.12, "e": 333.05, "lead_av": 0.03, "tail_av": 1.0, "adj": false},
+  {"beat": "card7", "broll": 387.2, "card": true},
+  {"beat": "cta", "spk": "W", "s": 363.77, "e": 372.35, "lead_av": 0.3, "tail_av": 1.9, "adj": true, "chapter": 7},
+  {"beat": "laugh", "spk": "M", "s": 374.29, "e": 376.3, "lead_av": 1.9, "tail_av": 0.0, "adj": false, "hold_beats": 4.0},
+  {"beat": "leave", "broll": 389.5, "beats": 6.0}
+ ],
+ "overlays": [
+  {
+   "src": 1.9,
+   "at": "open",
+   "beats": 4,
+   "zoom": [
+    1.0,
+    1.045
+   ],
+   "focus": [
+    0.5,
+    0.52
+   ]
+  }
+ ],
+ "fixes": []
+}

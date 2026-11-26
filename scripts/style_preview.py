@@ -3,8 +3,9 @@
 python style_preview.py PROJECT OUT.jpg [--t SECONDS] [--spk M]
 
 Run it after find_faces.py and send it together with look_choices.jpg. One storyboard row per style, in the
-order of the question (the default first), three vertical frames each. They are drawn with the skill's own fonts
-and the person matte, so text stands behind the speaker as it will in the edit. The colour is the camera's own.
+order of the question (the default first): three vertical frames for the styles made for 9:16, four 16:9 frames for
+the vlog style, which is a horizontal YouTube edit. They are drawn with the skill's own fonts and the person matte, so
+text stands behind the speaker as it will in the edit. The colour is the camera's own.
 A new style needs a row in STYLES and a frame function here, a row in the style table in SKILL.md, and its own
 reference file.
 """
@@ -222,11 +223,256 @@ def tr_title():
     return img
 
 
+# ----------------------------------------------------------------------------
+# style 3: the chill vlog, cut on the music's beat (references/vlog.md): 16:9 frames on a canvas of their own
+# ----------------------------------------------------------------------------
+LW, LH = 1920, 1080
+lsc = max(LW / fw, LH / fh)                       # the source frame, cover-fitted to 16:9
+LM = np.array([[lsc, 0, (LW - fw * lsc) / 2], [0, lsc, (LH - fh * lsc) / 2]], np.float64)
+LVIEW = cv2.warpAffine(frame, LM, (LW, LH), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
+LMATTE = cv2.warpAffine(matte, LM, (LW, LH), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+LHX = E.FACE[SPK][0] * ws * lsc + LM[0, 2]       # the speaker's face x and head top on the 16:9 frame
+LHY = E.FACE[SPK][2] * ws * lsc + LM[1, 2]
+CREAM, PAPERC, INKB = (255, 244, 224), (252, 244, 228), (38, 32, 26)
+
+
+class LCanvas:
+    """a 16:9 transparent layer shaped like engine.Layer for draw_text, big_text and chip."""
+    def __init__(self):
+        self.arr = np.zeros((LH, LW, 4), np.uint8)
+        self.surf = skia.Surface(self.arr, skia.kBGRA_8888_ColorType, skia.kPremul_AlphaType)
+        self.c = self.surf.getCanvas()
+
+    def mark(self, *a, **k):
+        pass
+
+
+def lshade(L, y0, y1, a0, a1):
+    p = skia.Paint(AntiAlias=True)
+    p.setShader(skia.GradientShader.MakeLinear([skia.Point(0, y0), skia.Point(0, y1)],
+                                               [E.col((10, 12, 10), a0), E.col((10, 12, 10), a1)]))
+    L.c.drawRect(skia.Rect.MakeLTRB(0, y0, LW, y1), p)
+
+
+def lcaption(L, words, key):
+    items = [(w, E.font("serif_ib", 58 * 1.15) if w in key else E.font("bold", 58), E.AMBER if w in key else E.WHITE)
+             for w in words.split()]
+    sp = 58 * 0.27
+    total = sum(E.text_width(w, f) for w, f, _ in items) + sp * (len(items) - 1)
+    x = LW / 2 - total / 2
+    for w, f, c in items:
+        tw = E.text_width(w, f)
+        E.draw_text(L, w, f, x + tw / 2, 968, rgb=c, shadow=8, shadow_a=200)
+        x += tw + sp
+
+
+def lplate(L, cx, cy, w, h, num, title, sub, accent):
+    c = L.c
+    x0, y0, x1, y1 = cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
+    c.drawRRect(E.rrect(x0, y0 + 10, x1, y1 + 10, 26), E.fill((0, 0, 0), 70, blur=18))
+    c.drawRRect(E.rrect(x0, y0, x1, y1, 26), E.fill(E.INK, 168))
+    c.drawRRect(E.rrect(x0, y0, x1, y1, 26), E.stroke(E.WHITE, 52, width=1.6))
+    E.draw_text(L, num, E.font("black", 72), x0 + 34, cy + 25, rgb=accent, align="left")
+    tx = x0 + 34 + E.text_width(num, E.font("black", 72)) + 26
+    E.draw_text(L, title, E.font("bold", 44), tx, cy - 8, align="left")
+    E.draw_text(L, sub, E.font("medium", 30), tx, cy + 38, rgb=(222, 222, 212), align="left")
+
+
+def vl_open():
+    """the opening: a moment of the shoot, the episode's question in a title block over the trees"""
+    img = LVIEW.copy()
+    L = LCanvas()
+    lshade(L, 0, 620, 150, 0)
+    xr = 1812 if LHX < LW * 0.55 else 108
+    al = "right" if xr > LW / 2 else "left"
+    E.draw_text(L, "tập mới · chủ đề", E.font("bold", 36), xr, 122, rgb=E.AMBER, align=al, tracking=7.0, shadow=10,
+                shadow_a=180)
+    E.draw_text(L, "mở bằng một cảnh", E.font("xbold", 100), xr, 232, align=al, shadow=16, shadow_a=90)
+    E.draw_text(L, "của buổi quay", E.font("xbold", 100), xr, 336, align=al, shadow=16, shadow_a=90)
+    E.draw_text(L, "và câu hỏi của tập", E.font("serif_ib", 104), xr, 452, rgb=E.AMBER, align=al, shadow=16,
+                shadow_a=90, glow=(255, 170, 60), glow_a=90)
+    E.over_premul(img, L.arr)
+    return img
+
+
+def vl_card():
+    """a chapter card on B-roll: two beats, then the chapter starts on the downbeat"""
+    img = LVIEW.copy()
+    L = LCanvas()
+    lshade(L, 0, 600, 150, 0)
+    lshade(L, 700, LH, 0, 110)
+    E.draw_text(L, "02 / 05", E.font("bold", 40), LW / 2, 196, rgb=E.AMBER, tracking=8.0, shadow=10, shadow_a=170)
+    L.c.drawLine(LW / 2 - 150, 226, LW / 2 + 150, 226, E.stroke(E.AMBER, 230, width=3))
+    E.draw_text(L, "mỗi chương một thẻ", E.font("serif_ib", 128), LW / 2, 372, rgb=CREAM, shadow=16, shadow_a=90)
+    E.over_premul(img, L.arr)
+    return img
+
+
+def vl_beat():
+    """ideas in plates above the heads, each popping on a beat; every cut on the beat grid"""
+    img = LVIEW.copy()
+    L = LCanvas()
+    lplate(L, 680, 212, 540, 156, "1", "ý thứ nhất", "hiện đúng phách nhạc", E.MINT)
+    lplate(L, 1250, 212, 560, 156, "2", "ý thứ hai", "phách sau, không vội", E.SKY)
+    c = L.c
+    x0, x1, y = 420, 1500, 790
+    c.drawRRect(E.rrect(x0 - 40, y - 46, x1 + 40, y + 40, 24), E.fill(E.INK, 150))
+    for i in range(17):
+        x = x0 + (x1 - x0) * i / 16
+        big = i % 4 == 0
+        c.drawLine(x, y - (18 if big else 9), x, y + (18 if big else 9),
+                   E.stroke(E.WHITE, 230 if big else 120, width=3 if big else 2))
+    for i in (4, 7, 12):
+        x = x0 + (x1 - x0) * i / 16
+        pth = skia.Path()
+        pth.moveTo(x, y - 34)
+        pth.lineTo(x + 13, y - 21)
+        pth.lineTo(x, y - 8)
+        pth.lineTo(x - 13, y - 21)
+        pth.close()
+        c.drawPath(pth, E.fill(E.AMBER, 255))
+    E.draw_text(L, "nhát cắt", E.font("semi", 26), x0 + (x1 - x0) * 4 / 16, y + 36, rgb=E.AMBER)
+    lcaption(L, "mỗi nhát cắt rơi đúng phách", {"đúng", "phách"})
+    E.over_premul(img, L.arr)
+    return img
+
+
+def vl_paper():
+    """the word behind the speaker, and a page of the travel journal for a definition"""
+    img = LVIEW.copy()
+    b = LCanvas()
+    f = E.font("serif_ib", 250)
+    cap = f.getMetrics().fCapHeight or 175
+    big_text(b, T, 0, 99, "ý chính", min(max(LHX, 420), LW - 420), LHY + cap * 0.40, size=250, kind="serif_ib",
+             rgb=E.AMBER, max_w=900, enter="none", glow=(255, 170, 60), tracking=0.0)
+    E.behind_premul(img, b.arr, LMATTE)
+    L = LCanvas()
+    cx, cy, wd, hd = (1380 if LHX < LW / 2 else 540), 200, 720, 210
+    c = L.c
+    c.save()
+    c.rotate(-2.0, cx, cy)
+    c.drawRRect(E.rrect(cx - wd / 2 + 4, cy - hd / 2 + 16, cx + wd / 2 - 4, cy + hd / 2 + 18, 10), E.fill((0, 0, 0), 95, blur=22))
+    c.drawRRect(E.rrect(cx - wd / 2, cy - hd / 2, cx + wd / 2, cy + hd / 2, 10), E.fill(PAPERC, 250))
+    c.drawRect(skia.Rect.MakeLTRB(cx - 75, cy - hd / 2 - 17, cx + 75, cy - hd / 2 + 21), E.fill(E.AMBER, 150))
+    E.draw_text(L, "từ khóa", E.font("serif_b", 74), cx - wd / 2 + 44, cy - 12, rgb=INKB, align="left")
+    E.draw_text(L, "giải thích như trang sổ tay", E.font("serif_i", 44), cx - wd / 2 + 44, cy + 62, rgb=(176, 92, 30),
+                align="left")
+    c.restore()
+    lcaption(L, "chữ đứng sau người nói", {"sau", "người"})
+    E.over_premul(img, L.arr)
+    return img
+
+
+# ----------------------------------------------------------------------------
+# style 4: motion viral, TikTok (references/motion.md). Drawn here without story.py: no timeline exists yet.
+# ----------------------------------------------------------------------------
+import ui as U  # noqa: E402  (mock software pieces: the cursor)
+
+BLUE1, BLUE2, YEL, NAVYD = (34, 70, 214), (22, 50, 186), (255, 226, 60), (10, 22, 90)
+
+
+def sunburst(img, cx, cy, rays=14, c1=BLUE1, c2=BLUE2):
+    """a flat sunburst over the whole frame, in two blues"""
+    L = layer()
+    L.c.drawRect(skia.Rect.MakeLTRB(0, 0, W, H), E.fill(c2, 255))
+    R = 3000
+    for i in range(rays):
+        a0 = 2 * np.pi * i / rays
+        a1 = a0 + np.pi / rays
+        pth = skia.Path()
+        pth.moveTo(cx, cy)
+        pth.lineTo(cx + R * np.cos(a0), cy + R * np.sin(a0))
+        pth.lineTo(cx + R * np.cos(a1), cy + R * np.sin(a1))
+        pth.close()
+        L.c.drawPath(pth, E.fill(c1, 255))
+    L.mark(0, 0, W, H, pad=0)
+    over(img, L)
+
+
+def extruded(L, text, size, y, rgb, depth=16, kind="black"):
+    """3D title letters: a solid navy side, then the face"""
+    f = E.font(kind, size)
+    for k in range(depth, 0, -2):
+        E.draw_text(L, text, f, W / 2 + k * 0.55, y + k * 0.75, rgb=NAVYD)
+    E.draw_text(L, text, f, W / 2, y, rgb=rgb)
+
+
+def mo_sticker():
+    """frame 0: the speaker cut out like a sticker on a sunburst, the topic as a 3D title, the motif on screen"""
+    img = np.zeros_like(VIEW)
+    sunburst(img, W / 2, H * 0.56)
+    m = MVIEW.astype(np.float32) / 255.0
+    ring = cv2.dilate((MVIEW > 110).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (27, 27))).astype(np.float32)
+    sh = cv2.GaussianBlur(np.roll(np.roll(ring, 16, 0), 10, 1), (0, 0), 7) * 0.4
+    img = (img * (1 - sh[..., None])).astype(np.uint8)
+    img = (img * (1 - ring[..., None]) + 255 * ring[..., None]).astype(np.uint8)
+    img = (img * (1 - m[..., None]) + VIEW * m[..., None]).astype(np.uint8)
+    L = layer()
+    g = skia.Paint(AntiAlias=True)                   # a navy floor: the chair legs and the ground fade away
+    g.setShader(skia.GradientShader.MakeLinear([skia.Point(0, H * 0.78), skia.Point(0, H)],
+                                               [E.col(NAVYD, 0), E.col(NAVYD, 245)]))
+    L.c.drawRect(skia.Rect.MakeLTRB(0, H * 0.78, W, H), g)
+    extruded(L, "CHỦ ĐỀ", 190, 470, YEL)
+    extruded(L, "NÓI RÕ TRONG", 104, 600, E.WHITE, depth=12)
+    extruded(L, "2 GIÂY ĐẦU", 150, 760, YEL)
+    U.Cursor([(0.0, 850, 612)], scale=5.0, t_in=0.0, t_out=1.0).draw(L, 0.5)
+    over(img, L)
+    return img
+
+
+def mo_mask():
+    """the reveal: black, and the key word's letters are windows onto the speaker; then a fly-through"""
+    img = np.zeros_like(VIEW)
+    L = layer()
+    f = E.font("black", 300)
+    for txt, y in (("TỪ", 820), ("KHÓA", 1110)):
+        E.draw_text(L, txt, E.font("black", 300 if txt == "TỪ" else 250), W / 2, y, rgb=(255, 255, 255))
+    a = L.arr[..., 3:4].astype(np.float32) / 255.0
+    img = (VIEW * a).astype(np.uint8)
+    L2 = layer()
+    E.draw_text(L2, "CHỮ KHOÉT LỖ", E.font("bold", 40), W / 2, 520, rgb=E.AMBER, tracking=0.3 * 40)
+    E.draw_text(L2, "máy quay bay xuyên qua một chữ", E.font("serif_i", 46), W / 2, 1290, rgb=E.WHITE)
+    over(img, L2)
+    return img
+
+
+def mo_stack():
+    """captions as magazine stacks: small white lead-in, the key word huge behind the head, small words after"""
+    img = VIEW.copy()
+    b, f_ = layer(), layer()
+    key = E.font("black", 196)
+    tw = E.text_width("từ khóa", key)
+    x0 = max(70, min(W - 70 - tw, HX - tw / 2))
+    yk = HY + 60
+    for k in range(10, 0, -2):
+        E.draw_text(b, "từ khóa", key, x0 + tw / 2 + k * 0.4, yk + k * 0.6, rgb=(8, 12, 26))
+    E.draw_text(b, "từ khóa", key, x0 + tw / 2, yk, rgb=(40, 230, 228))
+    behind(img, b)
+    sm = E.font("black", 62)
+    E.draw_text(f_, "câu nói có", sm, x0 + 8, yk - 190, rgb=E.WHITE, align="left", shadow=10, shadow_a=220)
+    E.draw_text(f_, "xếp tầng", sm, x0 + tw - 8, yk + 76, rgb=E.WHITE, align="right", shadow=10, shadow_a=220)
+    c = f_.c
+    n, gap, x1, x2, yb = 6, 10, 70, 1010, 258
+    wseg = (x2 - x1 - gap * (n - 1)) / n
+    for i in range(n):
+        xa = x1 + i * (wseg + gap)
+        c.drawRRect(E.rrect(xa, yb, xa + wseg, yb + 9, 4.5), E.fill((40, 230, 228) if i < 2 else E.WHITE, 255 if i < 2 else 90))
+    f_.mark(0, 0, W, H, pad=0)
+    over(img, f_)
+    return img
+
+
 STYLES = [  # (label, one line for the sheet, frames) in the order of the question: the default first
     ("1 · Tiêu chuẩn (mặc định)", "Nhịp nhanh, chữ đứng sau người nói, sơ đồ, phụ đề từng chữ, nhạc nền nhẹ",
      (std_depth, std_diagram, std_end)),
     ("2 · Trailer phim", "Màn đen chèn chữ, trống dồn, im lặng trước khi lật bài, twist ở cuối · 45-90 giây",
      (tr_montage, tr_card, tr_title)),
+    ("3 · Vlog chill (khớp nhạc)",
+     "Nhịp chậm kiểu vlog du lịch, cắt và chữ đúng phách nhạc, thẻ chương · bản ngang YouTube",
+     (vl_open, vl_card, vl_beat, vl_paper)),
+    ("4 · Motion viral (TikTok)",
+     "2 giây đầu rõ chủ đề, hình ảnh xuyên suốt, chữ khoét lỗ, phụ đề màu xếp tầng · 60-95 giây",
+     (mo_sticker, mo_mask, mo_stack)),
 ]
 
 # ----------------------------------------------------------------------------
@@ -237,10 +483,16 @@ SW = M_ * 2 + 3 * PW + 2 * GAP
 SH = M_ + len(STYLES) * (BAND + PH + M_)
 sheet = np.full((SH, SW, 3), 18, np.uint8)
 y = M_
+TW = (SW - 2 * M_ - GAP) // 2                    # a 16:9 style: four frames in two rows
+TH = TW * 9 // 16
 for label, line, frames in STYLES:
     for k, fn in enumerate(frames):
-        x = M_ + k * (PW + GAP)
-        sheet[y + BAND:y + BAND + PH, x:x + PW] = cv2.resize(fn(), (PW, PH), interpolation=cv2.INTER_AREA)
+        if len(frames) == 4:
+            x, yy = M_ + (k % 2) * (TW + GAP), y + BAND + (k // 2) * (TH + GAP)
+            sheet[yy:yy + TH, x:x + TW] = cv2.resize(fn(), (TW, TH), interpolation=cv2.INTER_AREA)
+        else:
+            x = M_ + k * (PW + GAP)
+            sheet[y + BAND:y + BAND + PH, x:x + PW] = cv2.resize(fn(), (PW, PH), interpolation=cv2.INTER_AREA)
     y += BAND + PH + M_
 
 

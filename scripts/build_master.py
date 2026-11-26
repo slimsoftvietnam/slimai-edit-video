@@ -1,4 +1,5 @@
-"""Graded master holding only the frames the edit uses (source order) + master_index.json.
+"""Graded master holding only the frames the edit uses (source order) + master_index.json. The frames are the
+clips of timeline.json plus its "extra" ranges (B-roll drawn over a speaking clip, set in select.json).
 
 python build_master.py PROJECT [--crf 6] [--denoise | --no-denoise] [--look iphone]
 
@@ -43,7 +44,8 @@ lut = f"look_{look}_{transfer}.cube"
 if not natural:
     film_look.write_cube(os.path.join(proj, lut), look, transfer)
 
-ranges = sorted((int(round(c["src_in"] * FPS)), int(round(c["src_in"] * FPS)) + c["frames"]) for c in tl["clips"])
+ranges = sorted([(int(round(c["src_in"] * FPS)), int(round(c["src_in"] * FPS)) + c["frames"]) for c in tl["clips"]] +
+                [(int(round(t * FPS)), int(round(t * FPS)) + int(n)) for (t, n) in tl.get("extra", [])])   # B-roll overlays
 merged = []
 for a, b in ranges:
     if merged and a <= merged[-1][1] + 2:
