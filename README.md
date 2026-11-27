@@ -11,6 +11,10 @@ Trước khi dựng, Claude gửi hai ảnh lấy từ chính video của bạn 
   - **Motion viral (TikTok)**: 2 giây đầu nói rõ chủ đề với người tách nền như sticker trên nền tia sáng và tiêu đề 3D, một hình ảnh chạy xuyên suốt video (như con trỏ chuột tự bấm), chữ khoét lỗ bay xuyên qua, phụ đề màu xếp tầng, lời kêu gọi đặt ngay sau ý mạnh nhất; 60-95 giây.
 - **Màu:** màu gốc iPhone (mặc định), màu phim ấm, màu phim tương phản hoặc màu trung tính. Màu gốc iPhone giữ hình như file quay: không khử nhiễu, không làm nét thêm, vùng nắng vẫn giữ chi tiết.
 
+Ảnh chọn phong cách Claude gửi cho tập 16, vẽ trên một khung hình của chính video:
+
+<img src="docs/style_choices.jpg" width="480" alt="Bốn phong cách dựng vẽ trên một khung hình của tập 16: tiêu chuẩn, trailer phim, vlog chill khớp nhạc, motion viral">
+
 Video có phụ đề theo từng từ, chữ đứng sau người nói, sơ đồ motion graphic, thu nhỏ người nói vào khung khi cần chỗ trình bày, nhạc và hiệu ứng âm thanh tự viết bằng code. Video hai người có thể chia đôi khung dọc, nam trên nữ dưới, ở những câu hỏi hay phản ứng cần thấy cả hai gương mặt. Skill cũng xuất thumbnail, phụ đề SRT, danh sách chương và bộ nội dung đăng YouTube: ba tiêu đề để YouTube thử xem tiêu đề nào giữ người xem lâu hơn, mô tả, thẻ và bình luận ghim. Từ khóa lấy từ gợi ý tìm kiếm của chính YouTube.
 
 ## Cài đặt

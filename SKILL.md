@@ -41,7 +41,7 @@ python <skill>/scripts/style_preview.py PROJECT PROJECT/style_choices.jpg
 python <skill>/scripts/speaker_hints.py PROJECT
 ```
 
-**Ask about style and colour on every new video**, unless the request already says which. Send `style_choices.jpg` (one frame of their video drawn in each style: three vertical frames per style, four 16:9 frames for the vlog) and `look_choices.jpg` (the same video in all four looks) with SendUserFile, then ask one AskUserQuestion with two questions. Add a third when `init_project` says the source name has no episode number. Leave out a question the request has already answered. If they want to see a style in motion, send the preview of an earlier edit in that style when one exists in the output folder.
+**Ask about style and colour on every new video**, unless the request already says which. Send `style_choices.jpg` (one frame of their video drawn in each style: three vertical frames per style, four 16:9 frames for the vlog) and `look_choices.jpg` (the same video in all four looks) with SendUserFile, then ask one AskUserQuestion with two questions. Add a third when `init_project` says the source name has no episode number. Leave out a question the request has already answered. If they want to see a style in motion, send the preview of an earlier edit in that style when one exists in the output folder. Before there is a project (the user asks what the styles look like), send `<skill>/docs/style_choices.jpg`: tập 16 drawn in all four.
 
 Style: "Bạn muốn dựng theo phong cách nào? (xem ảnh minh họa vừa gửi)", header "Phong cách". Offer these four options in this order, the default first. A landscape source suits all four; for a portrait source leave out the vlog, which needs the wide two-shot:
 
