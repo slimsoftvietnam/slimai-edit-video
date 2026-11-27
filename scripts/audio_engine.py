@@ -307,18 +307,6 @@ def sfx_shutter(vel=1.0):
     return (y * 0.35 * vel).astype(np.float32)
 
 
-def sfx_type(vel=1.0, count=6, spacing=0.07):
-    n = int((count * spacing + 0.1) * SR)
-    y = np.zeros(n)
-    for i in range(count):
-        s = int((i * spacing + RNG.uniform(-0.012, 0.012)) * SR)
-        if s < 0:
-            s = 0
-        k = sfx_tick(RNG.uniform(0.5, 1.0), f=RNG.uniform(1800, 3200))
-        y[s:s + len(k)] += k[: n - s]
-    return (y * vel).astype(np.float32)
-
-
 def sfx_glitch(vel=1.0, length=0.25):
     n = int(length * SR)
     y = np.zeros(n)
@@ -337,6 +325,15 @@ def sfx_glitch(vel=1.0, length=0.25):
 # ----------------------------------------------------------------------------
 # Effects
 # ----------------------------------------------------------------------------
+
+def use_sfx(**fns):
+    """swap a sound for every caller that reaches it through this module (audio_mix's cues, the effects built from
+    pops and ticks): use_sfx(pop=fn, tick=fn). modern_sfx.py does this when a design imports it."""
+    for name, fn in fns.items():
+        if "sfx_" + name not in globals():
+            raise KeyError(f"no sound sfx_{name} to replace")
+        globals()["sfx_" + name] = fn
+
 
 def make_ir(rt60=2.2, predelay=0.018, damp=0.5):
     n = int(rt60 * 1.15 * SR)

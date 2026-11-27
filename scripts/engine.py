@@ -97,6 +97,32 @@ def nfc(s):
     return unicodedata.normalize("NFC", s)
 
 
+_SYSTEM = {}
+
+
+def system_font(name, size, fallback="medium"):
+    """a font file from the Windows font folder (consola.ttf for code, times.ttf for phonetic symbols: the skill's own
+    fonts have neither), else the skill's `fallback` kind"""
+    key = (name, round(size, 1))
+    if key not in _SYSTEM:
+        p = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", name)
+        tf = skia.Typeface.MakeFromFile(p) if os.path.exists(p) else None
+        if tf is None:
+            _SYSTEM[key] = font(fallback, size)
+        else:
+            f = skia.Font(tf, float(size))
+            f.setSubpixel(True)
+            f.setEdging(skia.Font.Edging.kAntiAlias)
+            _SYSTEM[key] = f
+    return _SYSTEM[key]
+
+
+def ink_top(f, text):
+    """how far the tallest glyph of `text` rises above the baseline in font f, Vietnamese marks included (px)"""
+    tops = [r.top() for r in f.getBounds(f.textToGlyphs(nfc(text)))]
+    return -min(tops) if tops else f.getMetrics().fCapHeight
+
+
 # ----------------------------------------------------------------------------
 # easing
 # ----------------------------------------------------------------------------
@@ -159,6 +185,11 @@ def lerp(a, b, x):
 # ----------------------------------------------------------------------------
 def col(rgb, a=255):
     return skia.Color(int(rgb[0]), int(rgb[1]), int(rgb[2]), int(max(0, min(255, a))))
+
+
+def c4(rgb, a):
+    """a float colour with alpha a (0-255, clamped), for skia.Paint(Color=...)"""
+    return skia.Color4f(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, max(0.0, min(1.0, a / 255)))
 
 
 def fill(rgb, a=255, blur=0.0):
@@ -405,8 +436,22 @@ def shot_cam(name):
     return clamp_cam(fx - (s["sx"] - 0.5) * W / k, fy - (s["sy"] - 0.5) * H / k, z)
 
 
+PIP_VIEW = None    # {speaker: (card width in source px, x offset)}: the PiP card shows that speaker alone, head to knees,
+                   # when two people sit close (vlog.setup(pip_view=...)); a speaker not listed gets (800, 0) meanwhile
+
+
 def card_view(spk, cw, ch):
     """what the PiP card shows: source centre and layout px per source px."""
+    if PIP_VIEW is not None:
+        fx, fy, _ = FACE[spk]
+        w_src, dx = PIP_VIEW.get(spk, (800.0, 0.0))
+        s = cw / w_src
+        h_src = ch / s
+        cx = fx + dx
+        cy = fy + 0.10 * h_src
+        cx = min(max(cx, w_src / 2), SRC_W - w_src / 2)
+        cy = min(max(cy, h_src / 2), SRC_H - h_src / 2)
+        return cx, cy, s
     fx, fy, _ = FACE[spk]
     s = PIP_ZOOM * max(cw / SRC_W, ch / SRC_H)
     w_src, h_src = cw / s, ch / s
@@ -441,7 +486,9 @@ _index = None
 
 
 def master_pos(src_f):
-    """position of a source frame inside master.mkv, which holds only the frames the edit uses."""
+    """position of a source frame inside master.mkv, which holds only the frames the edit uses. A frame the master
+    does not hold is replaced by the nearest one before it, with a warning (once): the master is older than the cut,
+    so run build_master.py and matte.py again."""
     global _index
     if _index is None:
         p = os.path.join(PROJECT, "master_index.json")
@@ -449,10 +496,22 @@ def master_pos(src_f):
     if not _index:
         return src_f
     i = bisect.bisect_right([r[0] for r in _index], src_f) - 1
+    if i < 0 or src_f - _index[i][0] >= _index[i][1]:
+        _warn_missing(src_f)
     if i < 0:
         return 0
     f0, n, pos = _index[i]
     return pos + min(src_f - f0, n - 1)
+
+
+_warned = []
+
+
+def _warn_missing(src_f):
+    if not _warned:
+        _warned.append(src_f)
+        print(f"WARNING: source frame {src_f} is not in master.mkv (shown: the nearest frame before it). The cut "
+              "uses frames the master was not built with: run build_master.py and matte.py again.", flush=True)
 
 
 class ClipReader:
@@ -664,7 +723,8 @@ class Finish:
         yy, xx = np.mgrid[0:OH, 0:OW].astype(np.float32)
         nx, ny = (xx - OW / 2) / (OW / 2), (yy - OH * 0.46) / (OH / 2)
         v = 1 - vignette * np.clip((np.sqrt(nx ** 2 * 0.9 + ny ** 2) - 0.55) / 0.9, 0, 1) ** 1.6
-        self.vig = np.clip(v * 255, 0, 255).astype(np.uint8)[..., None].repeat(3, axis=2)
+        # no vignette (the iphone look): no multiply by 255/255 on every frame
+        self.vig = np.clip(v * 255, 0, 255).astype(np.uint8)[..., None].repeat(3, axis=2) if vignette else None
         self.pos = self.neg = None
         if grain > 0:
             # one noise field, read at a different offset each frame: looks random, costs one frame of memory
@@ -691,7 +751,8 @@ class Finish:
                               cv2.multiply(hl, np.full_like(hl, 70), scale=1 / 255.0), hl])
             # screen: bright areas take almost no extra light, dark edges next to them do
             img = cv2.add(img, cv2.multiply(glow, cv2.bitwise_not(img), scale=1 / 255.0))
-        img = cv2.multiply(img, self.vig, scale=1 / 255.0)
+        if self.vig is not None:
+            img = cv2.multiply(img, self.vig, scale=1 / 255.0)
         if self.pos is not None:
             small = cv2.resize(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), (OW // 8, OH // 8), interpolation=cv2.INTER_AREA)
             m = cv2.resize(cv2.LUT(small, self.lut), (OW, OH), interpolation=cv2.INTER_LINEAR)

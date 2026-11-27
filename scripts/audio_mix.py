@@ -1,9 +1,27 @@
-"""Build the soundtrack: edited dialogue + code-composed music (ducked) + synthesised SFX.
+"""Build the soundtrack: edited dialogue + music + synthesised SFX, mixed to -14 LUFS.
 
-python audio_mix.py --project P --fmt tiktok|youtube
+python audio_mix.py --project P --fmt tiktok|youtube [--preset NAME] [--reuse-music]
 Outputs in P/audio_<fmt>/: voice_raw.wav voice.wav music.wav sfx.wav mix_pre.wav final_audio.wav (-14 LUFS)
-A design that registers story.score() events gets that trailer score (trailer_score.py) instead of the
-composed music, mixed as three stems (also hits.wav, perc.wav) with a limiter before the loudness pass.
+
+The preset is --preset, else MIX in design.py, else the one a style kit set (vlog.setup() sets "vlog"), else
+score_solo for a design with score() events and SOLO_WINDOWS, else score for one with score() events, else standard:
+  standard     code-composed music (compose.py, from story.music_plan()) at -23.5 LUFS, ducked 9 dB under the voice;
+               -14 LUFS, -1.2 dBTP
+  score        a trailer: the score registered with story.score() (trailer_score.py, and the kinds of modern_score.py
+               and track_music.py) in three stems: music -21 LUFS, ducked 9 dB (5.5 dB under a drive), hits -17.5,
+               perc -27; a limiter, then -14 LUFS, -1.5 dBTP. Also hits.wav, perc.wav, mix_lim.wav
+  score_solo   score with the music split in two before it is levelled (references/motion.md): the bed under the voice
+               as in score; each voiceless stretch (design.SOLO_WINDOWS, else the end card from design.T_END) levelled
+               on its own to -14.8 LUFS, so a licensed track carries the end card without lowering the bed under every
+               line. Hits 2 dB lower (the first word is often under the boom), -2.0 dBTP, a 20 ms fade-in
+  vlog         the vlog style (references/vlog.md): vlog_music.py on the cut's beat grid; the clip's own sound fades
+               out over B-roll, the holds after a last word, the end and vlog.QUIET; music -21 LUFS, ducked 6.5 dB,
+               3.5 dB up over B-roll; -14 LUFS, -1.5 dBTP, a 20 ms fade-in. --reuse-music keeps the music.wav already
+               rendered (the music takes a few minutes): use it after changing only cues
+
+A project script can import this module, call setup(project, fmt) and use its helpers (build_voice, render_sfx, wr,
+lufs, loudnorm...). Older project scripts set sys.argv to ["audio_mix.py", "--project", P, "--fmt", F] before importing
+it, and that still loads the project the same way.
 """
 import argparse
 import json
@@ -12,28 +30,42 @@ import subprocess
 import sys
 
 import numpy as np
-from scipy import signal
 from scipy.io import wavfile
-
-ap = argparse.ArgumentParser()
-ap.add_argument("--project", required=True)
-ap.add_argument("--fmt", choices=["youtube", "tiktok"], required=True)
-ARGS = ap.parse_args()
-os.environ["EDIT_PROJECT"] = os.path.abspath(ARGS.project)
-os.environ["EDIT_FMT"] = ARGS.fmt
-os.environ["EDIT_SS"] = "1"
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import audio_engine as ae  # noqa: E402
 import compose  # noqa: E402
-import engine as E  # noqa: E402
-import story as D  # noqa: E402
 
-D.load_design()
 SR = 48000
-FPS = E.FPS
-OUT = os.path.join(E.PROJECT, f"audio_{ARGS.fmt}")
-os.makedirs(OUT, exist_ok=True)
+PRESETS = ("standard", "score", "score_solo", "vlog")
+ARGS = D = E = FPS = OUT = IR = None      # set by setup()
+
+
+def parser():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--project", required=True)
+    ap.add_argument("--fmt", choices=["youtube", "tiktok"], required=True)
+    ap.add_argument("--preset", choices=PRESETS)
+    ap.add_argument("--reuse-music", action="store_true", help="vlog: keep the music.wav already rendered")
+    return ap
+
+
+def setup(project, fmt):
+    """load the project's design for this format; every helper below needs it. Once per process: engine and story
+    read the project when they are first imported."""
+    global ARGS, D, E, FPS, OUT, IR
+    ARGS = argparse.Namespace(project=project, fmt=fmt)
+    os.environ["EDIT_PROJECT"] = os.path.abspath(project)
+    os.environ["EDIT_FMT"] = fmt
+    os.environ["EDIT_SS"] = "1"
+    import engine
+    import story
+    story.load_design()
+    D, E, FPS = story, engine, engine.FPS
+    OUT = os.path.join(E.PROJECT, f"audio_{fmt}")
+    os.makedirs(OUT, exist_ok=True)
+    # made after the design is loaded, as it always was: the shared random generator's order of draws is part of the sound
+    IR = ae.make_ir(1.8, 0.015, 0.5)
 
 
 def wr(path, x):
@@ -223,8 +255,6 @@ def render_sfx(total):
     return buf
 
 
-IR = ae.make_ir(1.8, 0.015, 0.5)
-
 
 # ----------------------------------------------------------------------------
 # 3. mix
@@ -275,49 +305,26 @@ def loudnorm(src, dst, tp=-1.2, lra=11):
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af", af, "-ar", "48000", "-c:a", "pcm_s24le", dst], check=True)
 
 
-def main_score():
-    """trailer cut: the score registered with story.score() replaces the composed music (trailer_score.py)."""
-    import trailer_score
-    total = int(round(D.TOTAL * SR))
-    voice = build_voice()[:total]
-    if len(voice) < total:
-        voice = np.pad(voice, (0, total - len(voice)))
-    sfx = render_sfx(total)
-    wr(os.path.join(OUT, "sfx.wav"), sfx)
-    music, hits, perc, light = trailer_score.render(D.SCORE, D.TOTAL)
-    stems = {}
-    for name, x, target in (("music", music, -21.0), ("hits", hits, -17.5), ("perc", perc, -27.0)):
-        x = x[:total]
-        if len(x) < total:
-            x = np.pad(x, ((0, total - len(x)), (0, 0)))
-        p = os.path.join(OUT, f"{name}.wav")
-        wr(p, x)
-        lv_ = lufs(p) if np.abs(x).max() > 0 else None
-        stems[name] = x * db_to_gain(target - lv_) if lv_ is not None else x
-        print(f"{name} {lv_ if lv_ is None else round(lv_, 1)} -> {target} LUFS")
-    lv = lufs(os.path.join(OUT, "voice.wav"))
-    voice = voice * db_to_gain(-16.0 - lv)
-    print(f"voice {lv:.1f} -> -16 LUFS")
-    # the music dips under the voice, less while a drive plays (it has to be felt); hits and perc stay whole
-    act = smooth(np.clip((envelope_db(voice) + 46) / 16, 0, 1), 0.04, 0.4)
-    depth = np.full(total, -9.0)
-    for (a, b) in light:
-        depth[int(a * SR):int(b * SR)] = -5.5
-    mix = np.stack([voice, voice], axis=1) + stems["music"] * db_to_gain(depth * act)[:, None] + stems["hits"] \
-        + stems["perc"] + sfx
-    pre = os.path.join(OUT, "mix_pre.wav")
-    wr(pre, mix * 0.8)
-    # braams and booms are far above the speech peaks: limit them first, so loudnorm can stay linear
-    lim = os.path.join(OUT, "mix_lim.wav")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", pre, "-af", "alimiter=limit=0.7:attack=3:release=90:level=false",
-                    "-c:a", "pcm_f32le", lim], check=True)
-    loudnorm(lim, os.path.join(OUT, "final_audio.wav"), tp=-1.5, lra=14)
-    print("final", lufs(os.path.join(OUT, "final_audio.wav")), "LUFS")
+def fit(x, total):
+    """a stereo stem cut or padded to `total` samples"""
+    x = x[:total]
+    if len(x) < total:
+        x = np.pad(x, ((0, total - len(x)), (0, 0)))
+    return x
 
 
-def main():
-    if D.SCORE:
-        return main_score()
+def fade_in(src, dst):
+    """a 20 ms fade-in: a boom or a first word on frame 0 made the AAC encode overshoot the true peak (tập 14: the wav
+    was -2.0 dBTP, the AAC +0.2)"""
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-af", "afade=t=in:st=0:d=0.02", "-c:a", "pcm_s24le", dst],
+                   check=True)
+
+
+# ----------------------------------------------------------------------------
+# 4. presets
+# ----------------------------------------------------------------------------
+def mix_standard():
+    """code-composed music under the voice"""
     total = int(round(D.TOTAL * SR))
     voice = build_voice()[:total]
     if len(voice) < total:
@@ -356,5 +363,188 @@ def main():
     print("final", lufs(os.path.join(OUT, "final_audio.wav")), "LUFS")
 
 
+SOLO_LUFS = -14.8           # score_solo: a voiceless stretch, about 1 LU under the spoken parts in the final mix
+SOLO_RAMP = 0.35
+
+
+def solo_windows():
+    """score_solo: design.SOLO_WINDOWS [(t0, t1)], else the end card / the tag after the last word (design.T_END)"""
+    design = sys.modules.get("design")
+    if hasattr(design, "SOLO_WINDOWS"):
+        return list(design.SOLO_WINDOWS)
+    if hasattr(design, "T_END"):
+        return [(design.T_END - 0.05, D.TOTAL)]
+    return []
+
+
+def mix_score(solo=False):
+    """the score registered with story.score() replaces the composed music (trailer_score.py); solo: score_solo"""
+    import trailer_score
+    total = int(round(D.TOTAL * SR))
+    voice = build_voice()[:total]
+    if len(voice) < total:
+        voice = np.pad(voice, (0, total - len(voice)))
+    sfx = render_sfx(total)
+    wr(os.path.join(OUT, "sfx.wav"), sfx)
+    music, hits, perc, light = trailer_score.render(D.SCORE, D.TOTAL)
+    if solo:
+        tt = np.arange(total) / SR
+        music = fit(music, total)
+        parts = {"hits": hits, "perc": perc}
+        rest = np.ones(total, np.float32)
+        plan = [("music", -21.0)]
+        for i, (a, b) in enumerate(solo_windows()):        # each voiceless stretch is levelled on its own
+            w = np.clip(np.minimum((tt - a) / SOLO_RAMP + 0.5, (b - tt) / SOLO_RAMP + 0.5), 0, 1)
+            m = (0.5 - 0.5 * np.cos(np.pi * w)).astype(np.float32)
+            parts[f"music_solo{i}"] = music * m[:, None]
+            rest = rest * (1 - m)
+            plan.append((f"music_solo{i}", SOLO_LUFS))
+        parts["music"] = music * rest[:, None]
+        plan += [("hits", -19.5), ("perc", -27.0)]
+    else:
+        parts = {"music": music, "hits": hits, "perc": perc}
+        plan = [("music", -21.0), ("hits", -17.5), ("perc", -27.0)]
+    stems = {}
+    for name, target in plan:
+        x = fit(parts[name], total)
+        p = os.path.join(OUT, f"{name}.wav")
+        wr(p, x)
+        lv_ = lufs(p) if np.abs(x).max() > 0 else None
+        stems[name] = x * db_to_gain(target - lv_) if lv_ is not None else x
+        print(f"{name} {lv_ if lv_ is None else round(lv_, 1)} -> {target} LUFS")
+    lv = lufs(os.path.join(OUT, "voice.wav"))
+    voice = voice * db_to_gain(-16.0 - lv)
+    print(f"voice {lv:.1f} -> -16 LUFS")
+    # the music dips under the voice, less while a drive plays (it has to be felt); hits and perc stay whole
+    act = smooth(np.clip((envelope_db(voice) + 46) / 16, 0, 1), 0.04, 0.4)
+    depth = np.full(total, -9.0)
+    for (a, b) in light:
+        depth[int(a * SR):int(b * SR)] = -5.5
+    mix = np.stack([voice, voice], axis=1) + stems["music"] * db_to_gain(depth * act)[:, None]
+    if solo:
+        mix = mix + sum(v for k, v in stems.items() if k.startswith("music_solo"))
+    mix = mix + stems["hits"] + stems["perc"] + sfx
+    pre = os.path.join(OUT, "mix_pre.wav")
+    wr(pre, mix * 0.8)
+    # braams and booms are far above the speech peaks: limit them first, so loudnorm can stay linear
+    lim = os.path.join(OUT, "mix_lim.wav")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", pre, "-af", "alimiter=limit=0.7:attack=3:release=90:level=false",
+                    "-c:a", "pcm_f32le", lim], check=True)
+    final = os.path.join(OUT, "final_audio.wav")
+    if solo:
+        loudnorm(lim, os.path.join(OUT, "final_audio_nofade.wav"), tp=-2.0, lra=14)
+        fade_in(os.path.join(OUT, "final_audio_nofade.wav"), final)
+    else:
+        loudnorm(lim, final, tp=-1.5, lra=14)
+    print("final", lufs(final), "LUFS")
+
+
+VLOG_MUSIC_LUFS, VLOG_DUCK_DB = -21.0, -6.5
+VLOG_SOLO_DB = 3.5          # where the picture is B-roll the music steps forward: the swell lands with the cut
+VLOG_FADE = 0.18            # the clip's own sound fades out / in over this at a quiet window's edges
+VLOG_RAMP = 0.10
+
+
+def vlog_quiet_windows():
+    """(t0, t1) where the clip's own sound is not wanted: B-roll, the holds after a last word, the end, vlog.QUIET"""
+    import vlog
+    broll = set(b["beat"] for b in vlog.BT.get("broll", []))
+    out = [(c["out_in"], c["out_out"]) for c in D.CLIPS if c["beat"] in broll]
+    for h in vlog.BT.get("holds", []):
+        c = next(c for c in D.CLIPS if c["beat"] == h["beat"])
+        ws = [w["e"] for w in D.WORDS if c["out_in"] <= w["s"] < c["out_out"]]
+        last = max(ws) if ws else h["from"] / vlog.FPS
+        out.append((last + 0.12, c["out_out"]))
+    out.append((D.DUR, D.TOTAL))
+    out += [tuple(q) for q in vlog.QUIET]
+    return sorted(out)
+
+
+def mix_vlog(reuse_music=False):
+    """the vlog style: music on the beat grid, the clip's own sound out over B-roll and the holds"""
+    import vlog
+    import vlog_music
+    total = int(round(D.TOTAL * SR))
+    voice = build_voice()[:total]
+    if len(voice) < total:
+        voice = np.pad(voice, (0, total - len(voice)))
+    tt = np.arange(total) / SR
+    keep = np.ones(total, np.float32)
+    for (a, b) in vlog_quiet_windows():
+        w = np.clip(np.minimum((tt - a) / VLOG_FADE, (b - tt) / VLOG_FADE), 0, 1)
+        if b >= D.DUR - 1e-3:                               # nothing comes back after the last window
+            w = np.clip((tt - a) / VLOG_FADE, 0, 1)
+        keep *= (1 - (0.5 - 0.5 * np.cos(np.pi * w))).astype(np.float32)
+    voice = voice * keep
+    wr(os.path.join(OUT, "voice.wav"), voice)
+
+    mpath = os.path.join(OUT, "music.wav")
+    if reuse_music and os.path.exists(mpath):
+        music = rd(mpath)
+    else:
+        vlog_music.load(E.PROJECT, vlog.ARRANGE)
+        music = vlog_music.render()
+    music = music[:total]
+    if len(music) < total:
+        music = np.pad(music, ((0, total - len(music)), (0, 0)))
+    wr(mpath, music)
+    sfx = render_sfx(total)
+    wr(os.path.join(OUT, "sfx.wav"), sfx)
+
+    lv = lufs(os.path.join(OUT, "voice.wav"))
+    lm = lufs(os.path.join(OUT, "music.wav"))
+    voice = voice * db_to_gain(-16.0 - lv)
+    music = music * db_to_gain(VLOG_MUSIC_LUFS - lm)
+    print(f"voice {lv:.1f} LUFS -> -16, music {lm:.1f} LUFS -> {VLOG_MUSIC_LUFS}")
+    act = smooth(np.clip((envelope_db(voice) + 46) / 16, 0, 1), 0.045, 0.45)
+    solo = np.zeros(total, np.float32)
+    for (a, b) in vlog_quiet_windows():
+        w = np.clip(np.minimum((tt - a) / VLOG_RAMP + 0.5, (b - tt) / VLOG_RAMP + 0.5), 0, 1)
+        if b >= D.DUR - 1e-3:
+            w = np.clip((tt - a) / VLOG_RAMP + 0.5, 0, 1)
+        solo = np.maximum(solo, (0.5 - 0.5 * np.cos(np.pi * w)).astype(np.float32))
+    music_d = music * db_to_gain(VLOG_DUCK_DB * act * (1 - solo) + VLOG_SOLO_DB * solo)[:, None]
+    mix = np.stack([voice, voice], axis=1) + music_d + sfx
+    pre = os.path.join(OUT, "mix_pre.wav")
+    wr(pre, mix * 0.9)
+    loudnorm(pre, os.path.join(OUT, "final_audio_nofade.wav"), tp=-1.5)
+    fade_in(os.path.join(OUT, "final_audio_nofade.wav"), os.path.join(OUT, "final_audio.wav"))
+    print("final", lufs(os.path.join(OUT, "final_audio.wav")), "LUFS")
+    for (a, b) in vlog_quiet_windows():
+        print(f"  quiet {a:7.2f}-{b:7.2f}")
+
+
+def preset_of(args):
+    """--preset, else MIX in design.py, else a kit's story.MIX, else from the design's score"""
+    if args.preset:
+        return args.preset
+    design = sys.modules.get("design")
+    for p in (getattr(design, "MIX", None), getattr(D, "MIX", None)):
+        if p:
+            if p not in PRESETS:
+                sys.exit(f"MIX = {p!r} is not a preset ({', '.join(PRESETS)})")
+            return p
+    if D.SCORE:
+        return "score_solo" if hasattr(design, "SOLO_WINDOWS") else "score"
+    return "standard"
+
+
+def main():
+    args = parser().parse_args()
+    setup(args.project, args.fmt)
+    preset = preset_of(args)
+    print(f"preset {preset}", flush=True)
+    if preset == "standard":
+        mix_standard()
+    elif preset in ("score", "score_solo"):
+        mix_score(solo=preset == "score_solo")
+    else:
+        mix_vlog(args.reuse_music)
+
+
 if __name__ == "__main__":
     main()
+elif "--project" in sys.argv and D is None:
+    # an older project script set sys.argv and imported this module for its helpers: load the project as before
+    _a = parser().parse_known_args()[0]
+    setup(_a.project, _a.fmt)

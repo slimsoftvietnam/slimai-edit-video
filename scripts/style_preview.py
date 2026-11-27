@@ -212,9 +212,11 @@ def tr_card():
 def tr_title():
     img = np.zeros((H, W, 3), np.uint8)
     L = layer()
-    E.draw_text(L, "TÊN VIDEO", E.font("black", 170), W / 2, 860, tracking=0.02 * 170, gradient=(E.WHITE, (186, 198, 214)),
+    ft = E.font("black", 170)
+    E.draw_text(L, "TÊN VIDEO", ft, W / 2, 860, tracking=0.02 * 170, gradient=(E.WHITE, (186, 198, 214)),
                 glow=(255, 236, 200), glow_a=60, glow_blur=30)
-    L.c.drawLine(W / 2 - 170, 740, W / 2 + 170, 740, E.stroke(E.AMBER, 180, width=2))
+    ly = 860 - E.ink_top(ft, "TÊN VIDEO") - 22        # above the Ê's mark, as trailer.title_card places it
+    L.c.drawLine(W / 2 - 170, ly, W / 2 + 170, ly, E.stroke(E.AMBER, 180, width=2))
     E.draw_text(L, "Twist ở cuối, rồi tên phim.", E.font("serif_i", 50), W / 2, 958, rgb=E.AMBER)
     E.draw_text(L, "Rồi một câu mời follow", E.font("bold", 54), W / 2, 1180)
     E.draw_text(L, "hài mà trúng ý chính.", E.font("serif_ib", 60), W / 2, 1266, rgb=E.AMBER, glow=(255, 170, 60),

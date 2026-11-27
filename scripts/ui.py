@@ -1,14 +1,12 @@
-"""On-screen "computer" pieces for the Playwright episode (project-level, under test): a ghost cursor that moves, clicks
-and types on its own (the episode's motif: the AI is driving), a browser window, form fields and buttons, a code
-panel (the x-ray of a button), chat bubbles, a script card. All in layout px on a given layer; plain shapes, no brand
+"""On-screen "computer" pieces, made for the Playwright episode and used by the motion and vlog styles: a ghost cursor
+that moves, clicks and types on its own (the episode's motif: the AI is driving), a browser window, form fields and
+buttons, a code panel (the x-ray of a button), chat bubbles, a script card. All in layout px on a given layer; plain shapes, no brand
 artwork (the word "Zalo" appears as text only).
 """
-import math
-import os
-
 import skia
 
-from engine import H, W, clamp01, ease_in_cubic, ease_out_back, ease_out_cubic, font, nfc
+from engine import c4, clamp01, ease_out_back, ease_out_cubic, font, nfc, system_font
+from engine import rrect as rr  # noqa: F401  (the same rounded rectangle; designs call UI.rr)
 
 INK = (18, 22, 32)
 PAPER = (250, 251, 253)
@@ -20,11 +18,6 @@ GREEN = (36, 196, 118)
 REDC = (255, 95, 86)
 CODE_BG = (16, 20, 30)
 RIPPLE = (120, 235, 215)     # the cursor's click ripple; a design may set its own (the motion example: rawstyle.AQUA)
-_MONO = {}
-
-
-def c4(rgb, a):
-    return skia.Color4f(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, max(0.0, min(1.0, a / 255)))
 
 
 def ease_io(x):
@@ -34,22 +27,7 @@ def ease_io(x):
 
 def mono(size, bold=False):
     """Consolas from the system fonts (code and URLs: ASCII only); falls back to the UI font"""
-    key = (round(size, 1), bold)
-    if key not in _MONO:
-        p = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", "consolab.ttf" if bold else "consola.ttf")
-        tf = skia.Typeface.MakeFromFile(p) if os.path.exists(p) else None
-        if tf is None:
-            _MONO[key] = font("bold" if bold else "medium", size)
-        else:
-            f = skia.Font(tf, float(size))
-            f.setSubpixel(True)
-            f.setEdging(skia.Font.Edging.kAntiAlias)
-            _MONO[key] = f
-    return _MONO[key]
-
-
-def rr(x0, y0, x1, y1, r):
-    return skia.RRect.MakeRectXY(skia.Rect.MakeLTRB(x0, y0, x1, y1), r, r)
+    return system_font("consolab.ttf" if bold else "consola.ttf", size, "bold" if bold else "medium")
 
 
 def text(c, s, f, x, y, rgb, a, align="left"):

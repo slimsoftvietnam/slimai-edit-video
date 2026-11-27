@@ -20,7 +20,7 @@ import skia
 
 import story as _S
 from engine import AMBER, INK, MINT, WHITE, H, W, clamp01, draw_text, ease_in_cubic, ease_out_cubic, ease_out_expo, \
-    env, fill, font, lerp, nfc, rrect, stroke, text_width
+    env, fill, font, ink_top, lerp, nfc, rrect, stroke, text_width
 
 __all__ = ["BAR", "CARDS", "FLASHES", "card", "curtain", "card_text", "flash", "pill_text", "top_fade", "dim_room",
            "wrap_text", "prompt_box", "title_slam"]
@@ -193,8 +193,7 @@ def title_slam(L, t, t0, text, sub=None, y=None, size=200, max_w=None):
         draw_text(L, text, f, W / 2, y, a=170, tracking=trk, scale=sc, per_char=glint)
     # the accent line clears the tallest glyph, Vietnamese marks included. It used to sit at a fixed 120 px, which cut
     # through the top of a large title (by 13 px on 9:16 and 52 px on 16:9)
-    tops = [r.top() for r in f.getBounds(f.textToGlyphs(nfc(text)))]
-    ly = y - (-min(tops) if tops else f.getMetrics().fCapHeight) - 22 * K
+    ly = y - ink_top(f, text) - 22 * K
     L.c.drawLine(W / 2 - 170 * k, ly, W / 2 + 170 * k, ly, stroke(AMBER, 180 * k, width=2))
     if sub and t >= t0 + 0.45:
         v = clamp01((t - t0 - 0.45) / 0.12)

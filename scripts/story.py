@@ -51,11 +51,14 @@ PUNCHES = []           # (time, extra zoom fraction, attack, hold, release)
 PIP = []               # (t_in, t_out): speaker shrinks into the card over PIP_T from t_in, grows back from t_out
 SPLIT = []             # (t0, t1, top, bottom): split screen, one speaker per half (split_screen(); vertical only)
 SPLIT_FRAME = {}       # speaker -> (source centre x, centre y, source height one half shows); unset: from the face
+CLEAN_CUTS = []        # times of cuts that stay clean: no whip pan and no caption line across them (vlog: B-roll edges)
+AUTO_CUES = None       # a style's own automatic cues, run instead of _auto_cues() once the design is loaded (vlog.setup)
 LEAKS = []             # light-leak times
 LABELS = []            # (time, "01", "title"): chapter rail, YouTube only
 YT_CHAPTERS = []       # (time, title) for the description; YouTube needs >= 10 s per chapter
 MUSIC = dict(drop=None, sections=[], stops=[], bpm=96.0, transpose=0, tail=None)
 KEYS = {}              # caption keyword -> (font kind, colour, size multiple)
+MIX = None             # audio_mix.py's preset when the design sets no MIX of its own (vlog.setup() sets "vlog")
 # lower-case word -> displayed form. Never map "ai": in Vietnamese it is also the pronoun ("ai cũng" = everyone),
 # and Whisper already writes the technology as "AI".
 KEEP_CASE = {"github": "GitHub"}
@@ -64,7 +67,6 @@ CUES, EVENTS = [], []
 SCORE = []             # (time, kind, options): a trailer score instead of the composed music (trailer_score.py)
 PRE, POST = [], []     # fn(ctx, t) drawn before every event / after the captions (the trailer kit uses both)
 CAPTION_OFF = []       # fn(t) -> True while captions must stay hidden, e.g. under a black title card
-CCTV_T = [None, None]
 
 
 def pick(youtube, tiktok):
@@ -202,11 +204,6 @@ def panel(ctx, t, t0, t1, h, r=44, accent=None):
     x0, y0, x1, y1 = stage(h)
     v, dy = glass_panel(ctx, ctx.mid, t, t0, t1, x0, y0, x1, y1, r=r, accent=accent)
     return v, dy, x0, y0, x1, y1
-
-
-def diagram(t_in, t_out):
-    """register a PiP window for a diagram that lives in [t_in + 0.3, t_out]."""
-    PIP.append((t_in, t_out))
 
 
 def split_screen(t0, t1, top=None, bottom=None):
@@ -475,7 +472,7 @@ def build_lines():
             x["disp"] = disp
     # a split screen moves the captions to the seam, so no line is shown across a split's edge: it would jump.
     # Each edge sits half a frame before the frame where split_at() changes.
-    edges = sorted({(round(e * FPS) - 0.5) / FPS for sp in SPLIT for e in sp[:2]})
+    edges = sorted({(round(e * FPS) - 0.5) / FPS for e in [x for sp in SPLIT for x in sp[:2]] + list(CLEAN_CUTS)})
     for i, ln in enumerate(out):
         s0 = ln[0]["s"]
         nxt = out[i + 1][0]["s"] if i + 1 < len(out) else 1e9
@@ -657,5 +654,5 @@ def load_design():
     import design  # noqa: F401  (project file)
     PIP.sort()
     _resolve_splits()
-    _auto_cues()
+    (AUTO_CUES or _auto_cues)()
     LINES = build_lines()

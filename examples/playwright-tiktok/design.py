@@ -43,6 +43,7 @@ import rawgroups as G
 import fx as FX
 import ui as UI
 import modern_score  # noqa: F401  (registers hit, subdrop, stutter…)
+MIX = "score_solo"     # audio_mix.py: the end card's music levelled on its own (references/motion.md)
 import modern_sfx as MS
 import track_music as TM
 

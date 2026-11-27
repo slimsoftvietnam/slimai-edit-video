@@ -1,10 +1,12 @@
 """Render a project in one format.
 
-python render.py --project P --fmt youtube --parallel 3 OUT.mp4            (1080p, N worker processes + concat)
-python render.py --project P --fmt tiktok  --parallel 3 OUT.mp4
-python render.py --project P --fmt youtube --ss 2 --parallel 3 OUT.mp4     (4K, only when asked for: much slower)
+python render.py --project P --fmt youtube --parallel 2 OUT.mp4            (1080p, N worker processes + concat)
+python render.py --project P --fmt tiktok  --parallel 2 OUT.mp4
+python render.py --project P --fmt youtube --ss 2 --parallel 2 OUT.mp4     (4K, only when asked for: much slower)
     Parallel renders work through ~10 s chunks kept in OUT_parts/. Run the same command again after an
-    interruption and finished chunks are kept, unless the design, timeline or settings changed.
+    interruption and finished chunks are kept, unless something that shapes the picture changed (settings, any
+    module of the skill or the project the design loads, the timeline, beats.json, the master or the mattes).
+    N drops when free memory is short; a chunk that fails in a worker is rendered once more on its own.
 python render.py --project P --fmt tiktok  --range 10 20 OUT.mp4           (one process, a time range)
 python render.py --project P --fmt youtube --stills DIR 3.2 10.5 ...       (JPEG stills for layout review)
 python render.py --project P --fmt youtube --stills DIR auto               (two stills per registered event)
@@ -94,8 +96,9 @@ SEGS = build_segments()
 # split screen (story.split_screen, vertical formats): one speaker per half, each with a camera of its own
 # ----------------------------------------------------------------------------
 def near_split(tb, pad=0.3):
-    """no whip pan next to a split edge: the split would cut it in half."""
-    return any(abs(tb - sp[0]) < pad or abs(tb - sp[1]) < pad for sp in D.SPLIT)
+    """no whip pan next to a split edge (the split would cut it in half) or a clean cut (story.CLEAN_CUTS)."""
+    return any(abs(tb - sp[0]) < pad or abs(tb - sp[1]) < pad for sp in D.SPLIT) or \
+        any(abs(tb - c) < pad for c in D.CLEAN_CUTS)
 
 
 def split_frame(spk):
@@ -498,41 +501,53 @@ def render_range(f0, f1, out_path, log_every=150):
     _CTX = _CTX or Ctx()
     ctx = _CTX
     enc = encoder(out_path)
-    reader, cur_clip, last_frame, last_src = None, None, None, None
     tstart = time.time()
-    for f in range(f0, f1):
-        t = f / FPS
-        ci = clip_index_for_frame(f)
-        if ci is not None:
-            c = CLIPS[ci]
-            if ci != cur_clip:
-                if reader:
-                    reader.close()
-                off = f - c["out_f0"]
-                reader = E.ClipReader(c["src_f0"] + off, c["frames"] - off)
-                cur_clip = ci
-            frame = reader.next()
-            src_f = c["src_f0"] + (f - c["out_f0"])
-            last_frame, last_src = frame, src_f
-        else:
-            if last_frame is None:
-                # a chunk that starts in a gap (a trailer card) or in the end hold: freeze the clip before it
-                c = D.clip_at(t)
-                rd = E.ClipReader(c["src_f0"] + c["frames"] - 1, 1)
-                last_frame = rd.next()
-                rd.close()
-                last_src = c["src_f0"] + c["frames"] - 1
-            frame, src_f = last_frame, last_src
-        out = compose(frame, src_f, t, f, ctx)
-        enc.stdin.write(out.data if out.flags.c_contiguous else out.tobytes())
-        if (f - f0 + 1) % log_every == 0:
-            el = time.time() - tstart
-            print(f"[{os.path.basename(out_path)}] frame {f - f0}/{f1 - f0}  {el / max(1, f - f0 + 1) * 1000:.0f} ms/f", flush=True)
-    if reader:
-        reader.close()
+    try:
+        _frames(f0, f1, out_path, log_every, ctx, enc, tstart)
+    except BaseException:
+        enc.kill()        # a half-written chunk is useless: stop its encoder now (the caller removes the file)
+        enc.wait()
+        raise
     enc.stdin.close()
     if enc.wait() != 0:
         raise RuntimeError(f"encoder failed for {out_path}")
+
+
+def _frames(f0, f1, out_path, log_every, ctx, enc, tstart):
+    """compose frames f0 .. f1 - 1 into the encoder; the clip reader is closed whatever happens"""
+    reader, cur_clip, last_frame, last_src = None, None, None, None
+    try:
+        for f in range(f0, f1):
+            t = f / FPS
+            ci = clip_index_for_frame(f)
+            if ci is not None:
+                c = CLIPS[ci]
+                if ci != cur_clip:
+                    if reader:
+                        reader.close()
+                    off = f - c["out_f0"]
+                    reader = E.ClipReader(c["src_f0"] + off, c["frames"] - off)
+                    cur_clip = ci
+                frame = reader.next()
+                src_f = c["src_f0"] + (f - c["out_f0"])
+                last_frame, last_src = frame, src_f
+            else:
+                if last_frame is None:
+                    # a chunk that starts in a gap (a trailer card) or in the end hold: freeze the clip before it
+                    c = D.clip_at(t)
+                    rd = E.ClipReader(c["src_f0"] + c["frames"] - 1, 1)
+                    last_frame = rd.next()
+                    rd.close()
+                    last_src = c["src_f0"] + c["frames"] - 1
+                frame, src_f = last_frame, last_src
+            out = compose(frame, src_f, t, f, ctx)
+            enc.stdin.write(out.data if out.flags.c_contiguous else out.tobytes())
+            if (f - f0 + 1) % log_every == 0:
+                el = time.time() - tstart
+                print(f"[{os.path.basename(out_path)}] frame {f - f0}/{f1 - f0}  {el / max(1, f - f0 + 1) * 1000:.0f} ms/f", flush=True)
+    finally:
+        if reader:
+            reader.close()
 
 
 def event_times():
@@ -560,17 +575,28 @@ def stills(outdir, times):
         imwrite(os.path.join(outdir, f"still_{t:07.2f}.jpg"), out, [cv2.IMWRITE_JPEG_QUALITY, 92])
 
 
+def render_chunk(f0, f1, path):
+    """one chunk; it only gets its final name once it is complete. False when it failed (the error is printed)."""
+    t0 = time.time()
+    try:
+        render_range(f0, f1, path + ".tmp.mp4", log_every=10 ** 9)
+        os.replace(path + ".tmp.mp4", path)
+    except Exception as ex:     # out of memory, a decoder that died...: the parent renders it once more on its own
+        print(f"chunk {f0}-{f1} failed: {ex!r}", flush=True)
+        if os.path.exists(path + ".tmp.mp4"):
+            os.remove(path + ".tmp.mp4")
+        return False
+    print(f"chunk {f0}-{f1} done, {(time.time() - t0) / (f1 - f0) * 1000:.0f} ms/f", flush=True)
+    return True
+
+
 def _worker(jobs):
-    """take chunks until the queue is empty; a chunk only gets its final name once it is complete."""
+    """take chunks until the queue is empty"""
     while True:
         job = jobs.get()
         if job is None:
             return
-        f0, f1, path = job
-        t0 = time.time()
-        render_range(f0, f1, path + ".tmp.mp4", log_every=10 ** 9)
-        os.replace(path + ".tmp.mp4", path)
-        print(f"chunk {f0}-{f1} done, {(time.time() - t0) / (f1 - f0) * 1000:.0f} ms/f", flush=True)
+        render_chunk(*job)
 
 
 def chunk_bounds(size=300):
@@ -585,17 +611,63 @@ def chunk_bounds(size=300):
 
 
 def signature():
-    """chunks are reusable only if nothing that shapes the picture has changed."""
-    settings = [E.FMT, SS] + [os.environ.get(k) for k in ("EDIT_CRF", "EDIT_GRAIN", "EDIT_HALATION", "EDIT_DETAIL")]
+    """chunks are reusable only if nothing that shapes the picture has changed: the settings, every module loaded from
+    the skill or the project folder (render.py, engine, the design and whatever it imports: design_b.py, vlog.py,
+    ui.py...), the timeline and the beat grid, the master and the mattes."""
+    settings = [E.FMT, SS] + [os.environ.get(k) for k in ("EDIT_CRF", "EDIT_GRAIN", "EDIT_HALATION", "EDIT_DETAIL",
+                                                           "EDIT_CV_THREADS")]
     h = hashlib.sha1(repr(settings).encode())
     here = os.path.dirname(os.path.abspath(__file__))
-    files = [os.path.join(E.PROJECT, n) for n in ("design.py", "timeline.json", "project.json", "master_index.json")]
-    files += [os.path.join(here, n) for n in ("engine.py", "story.py", "gfx.py", "trailer.py", "render.py")]
-    for p in files:
+    dirs = {os.path.normcase(here), os.path.normcase(os.path.abspath(E.PROJECT))}
+    mods = sorted({os.path.abspath(m.__file__) for m in list(sys.modules.values())
+                   if str(getattr(m, "__file__", None) or "").endswith(".py")
+                   and os.path.normcase(os.path.dirname(os.path.abspath(m.__file__))) in dirs})
+    data = [os.path.join(E.PROJECT, n) for n in ("timeline.json", "project.json", "master_index.json", "beats.json")]
+    for p in mods + [p for p in data if os.path.exists(p)]:
+        h.update(os.path.basename(p).encode())
         with open(p, "rb") as fh:
             h.update(fh.read())
-    h.update(str(os.path.getsize(E.MASTER)).encode())
+    st = os.stat(E.MASTER)
+    h.update(f"{st.st_size} {st.st_mtime_ns}".encode())
+    names = os.listdir(E.MATTE_DIR) if os.path.isdir(E.MATTE_DIR) else []
+    newest = max((os.stat(os.path.join(E.MATTE_DIR, n)).st_mtime_ns for n in names), default=0)
+    h.update(f"{len(names)} {newest}".encode())
     return h.hexdigest()
+
+
+WORKER_GB = {1: 2.0, 2: 3.0}    # memory one worker may reach at 1080p / at 4K (--ss 2), with room to spare
+
+
+def free_memory_gb():
+    """physical memory free right now, in GB; None when it cannot be read"""
+    try:
+        if os.name == "nt":
+            import ctypes
+
+            class MemoryStatus(ctypes.Structure):
+                _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong)] +                            [(n, ctypes.c_ulonglong) for n in ("ullTotalPhys", "ullAvailPhys", "ullTotalPageFile",
+                                                              "ullAvailPageFile", "ullTotalVirtual", "ullAvailVirtual",
+                                                              "ullAvailExtendedVirtual")]
+            m = MemoryStatus()
+            m.dwLength = ctypes.sizeof(m)
+            if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
+                return None
+            return m.ullAvailPhys / 2 ** 30
+        return os.sysconf("SC_AVPHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") / 2 ** 30
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def workers_for(n):
+    """fewer workers than asked when free memory is short (three 4K workers once ran a 16 GB laptop out of memory)"""
+    free = free_memory_gb()
+    if free is None:
+        return n
+    fit = max(1, int((free - 1.5) / WORKER_GB.get(SS, WORKER_GB[2])))
+    if fit < n:
+        print(f"--parallel {n}: {free:.1f} GB of memory free is enough for {fit}; rendering with {fit}", flush=True)
+        return fit
+    return n
 
 
 def render_parallel(out, n):
@@ -614,6 +686,7 @@ def render_parallel(out, n):
     chunks = [(a, b, os.path.join(parts_dir, f"part_{a:06d}_{b:06d}.mp4")) for a, b in zip(bounds[:-1], bounds[1:])]
     todo = [c for c in chunks if not os.path.exists(c[2])]
     print(f"{len(chunks)} chunks, {len(chunks) - len(todo)} already done", flush=True)
+    n = min(workers_for(n), max(1, len(todo)))
     jobs = Queue()
     for c in todo:
         jobs.put(c)
@@ -624,9 +697,14 @@ def render_parallel(out, n):
         p.start()
     for p in procs:
         p.join()
-    missing = [c[2] for c in chunks if not os.path.exists(c[2])]
+    failed = [c for c in chunks if not os.path.exists(c[2])]
+    if failed:
+        print(f"{len(failed)} chunks failed in the workers; rendering them here, one at a time", flush=True)
+        for c in failed:
+            render_chunk(*c)
+    missing = [os.path.basename(c[2]) for c in chunks if not os.path.exists(c[2])]
     if missing:
-        sys.exit(f"{len(missing)} chunks failed; run the same command again to resume")
+        sys.exit(f"{len(missing)} chunks failed ({', '.join(missing)}); run the same command again to resume")
     lst = os.path.join(parts_dir, "list.txt")
     with open(lst, "w", encoding="utf-8") as fh:
         for c in chunks:

@@ -20,7 +20,7 @@ New uploads process in stages: low resolutions appear first. Tell the user not t
 
 ### Publishing kit
 
-Write the kit in the video's language as `<YouTube name>_kit.txt` next to the video, for example `01_Phong_van_YouTube_HD_v1_kit.txt`, with `=== ... ===` sections in this order: titles, description, tags, pinned comment, upload notes, notes. Check it with `scripts/youtube_meta.py measure`, then put the titles, description, tags and pinned comment in the reply as well, ready to paste. `examples/vibe-code/youtube_kit.txt` follows this section; `examples/repo-ai-agent/youtube_kit.txt` is an earlier kit, written when only one title could be used.
+Write the kit in the video's language as `<YouTube name>_kit.txt` next to the video, for example `01_Phong_van_YouTube_HD_v1_kit.txt`, with `=== ... ===` sections in this order: titles, description, tags, pinned comment, upload notes, notes. Check it with `scripts/youtube_meta.py measure`, then put the titles, description, tags and pinned comment in the reply as well, ready to paste. `examples/playwright-vlog/youtube_kit.txt` follows this section; `examples/repo-ai-agent/youtube_kit.txt` is an earlier kit, written when only one title could be used.
 
 YouTube does not publish how it ranks videos. What creator-tool sites reported by November 2026, all of them third party:
 

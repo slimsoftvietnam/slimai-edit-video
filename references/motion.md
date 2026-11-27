@@ -38,7 +38,7 @@ Every spoken phrase is a magazine stack over the speaker. The lead-in words sit 
 - `story_bar()`: the parts left. `beat_pulses(t0, n, beat)`: small camera pulses on the music's beats after a drop.
 - `ui.py` holds the mock software pieces: `Cursor(keys, clicks)` glides, presses and ripples; `window()`, `field()` (typed letter by letter), `button()` (press, done), `tick()`, `cross()`, `code_panel()`, `bubble()`, `card()`, `pill()`. Draw plain generic shapes: a brand name may appear as text, but never a logo or a copied screen. Say in the notes that they are illustrations.
 
-## Sound: a licensed track, `track_music.py`, `trailer_mix.py`
+## Sound: a licensed track, `track_music.py`, the `score_solo` mix
 
 - **The track** is one the user picks or approves. Download it only from its licence page, into a folder of its own, and decode it to a 48 kHz wav in the project (`music_work/`). Tell the user what its page says: a track marked "Content ID Registered" or "AI generated" is fine on TikTok but can be claimed on YouTube.
 - `python <skill>/scripts/music_analyse.py music_work/track.wav music_work/track` prints the tempo, every bar's start and energy, and a spectrogram with bar lines. Find the first downbeat, the drop, the break and the outro. Register it: `TM.add_track("banger", "music_work/trapbanger.wav", bar0=2.282, bpm=96.69)`.
@@ -48,7 +48,7 @@ Every spoken phrase is a magazine stack over the speaker. The lead-in words sit 
   - The track's brightest bars on the reveal, the melody alone under a card, the drop again on the strongest proof.
   - The melody alone under the call to act, so the typing is heard. The beat under the end card, fading out.
 - `modern_score.py` adds score kinds: `hit`, `subdrop`, `shepard`, `whoosh_up`, `stutter`, `rev_hit`, `pulse`, `beat`, `drone`, `ticks`. `modern_sfx.py` makes the clicks and pops crisp, tuned to the track's key: `MS.set_key(58, minor=True)` for Bb minor, and `f1=MS.note(...)` on pops.
-- **Mix** with `python <skill>/scripts/trailer_mix.py PROJECT --fmt tiktok` instead of audio_mix.py. The end card (from `T_END`, or `SOLO_WINDOWS`) is levelled on its own, so the track is heard there without lowering it under the voice. Booms: at most two, on frame 0 and on the reveal.
+- **Mix** with `python <skill>/scripts/audio_mix.py --project PROJECT --fmt tiktok`; `MIX = "score_solo"` in design.py picks the preset (a design with `SOLO_WINDOWS` gets it without). The end card (from `T_END`, or `SOLO_WINDOWS`) is levelled on its own, so the track is heard there without lowering it under the voice. Booms: at most two, on frame 0 and on the reveal.
 
 ## Check
 

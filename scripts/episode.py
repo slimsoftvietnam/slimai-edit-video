@@ -8,8 +8,9 @@
 - The episode is "episode" in project.json, e.g. "01_Phong_van". init_project.py takes it from a source file whose name
   starts with a number ("01_Phong_van.mov"). For any other source, ask the user which episode it is, then set it by
   hand (normalise() shows the form). A video the user does not want numbered gets its name alone ("Phong_van").
-- A deliverable is named EPISODE_VARIANT_vN, where VARIANT is TikTok, TikTok_trailer, YouTube_HD and so on. Its other
-  files share the stem: _preview_1080p.mp4, _cover.jpg, .srt, _chapters.txt, _kit.txt, _thumbnail_A.jpg.
+- A deliverable is named EPISODE_VARIANT_vN, where VARIANT is TikTok, TikTok_trailer (a trailer or motion cut),
+  YouTube_HD (a standard or vlog cut) and so on. Its other files share the stem: _preview_1080p.mp4 (or _720p),
+  _cover.jpg, .srt, _chapters.txt, _kit.txt, _thumbnail_A.jpg, _nguon.txt.
 - Only the newest version of each variant stays at the top of the episode folder. Once a new version passes,
   finish.py moves the older ones into ban_cu/. Comparison and test images go in so_sanh/.
 """

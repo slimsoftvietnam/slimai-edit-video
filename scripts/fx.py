@@ -23,16 +23,7 @@ import skia
 import engine as E
 import rawstyle as RS
 import story as S
-from engine import FPS, H, OH, OW, SS, W, clamp01, ease_in_cubic, ease_out_back, ease_out_cubic, font, nfc
-
-
-def c4(rgb, a):
-    return skia.Color4f(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, max(0.0, min(1.0, a / 255)))
-
-
-def ease_in_out(x):
-    x = clamp01(x)
-    return 3 * x * x - 2 * x * x * x
+from engine import FPS, H, OH, OW, SS, W, c4, clamp01, ease_out_cubic, font, nfc
 
 
 def ease_in_expo(x):

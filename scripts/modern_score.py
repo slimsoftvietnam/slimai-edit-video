@@ -1,6 +1,6 @@
 """Modern blockbuster trailer sounds (the motion style, references/motion.md; first made for the Agent Skill series,
-approved on tập 16). A design imports this module; it wraps trailer_score.render so that the new kinds below
-render into the same three stems, and every existing kind still goes through the skill's own code.
+approved on tập 16). A design imports this module; it registers the kinds below with trailer_score.register(), so
+they render into the same three stems, after the skill's own kinds.
 
 New score kinds (t in output seconds; gain defaults to 1):
   hits   hit(length=3.0, metal=1.0)     hybrid impact: sub thump, punch, metallic ring, crack, big tail
@@ -21,21 +21,10 @@ import trailer_score as TS
 
 SR = ae.SR
 _R = np.random.default_rng(23)
-_KNOWN = {"boom", "braam", "taiko", "riser", "swell", "crash", "heartbeat", "clock", "pad", "ostinato", "drive",
-          "bells", "piano"}
+KINDS = ("hit", "subdrop", "shepard", "whoosh_up", "stutter", "rev_hit", "pulse", "beat", "drone", "ticks")
 
 
-def S(t):
-    return int(round(t * SR))
-
-
-def st(x):
-    return x if x.ndim == 2 else np.stack([x, x], axis=1)
-
-
-def _env(n, att, dec):
-    t = np.arange(n) / SR
-    return np.minimum(1, t / max(att, 1e-4)) * np.exp(-t / dec)
+S, st = TS.S, TS.st          # seconds -> samples; a mono sound as stereo
 
 
 # ----------------------------------------------------------------------------
@@ -207,13 +196,10 @@ def ticks(pc, t0, until, bpm=124, gain=1.0):
 
 
 # ----------------------------------------------------------------------------
-# the wrapper: new kinds here, the rest through the skill's own render
+# the kinds, registered with trailer_score
 # ----------------------------------------------------------------------------
-def _render(events, total):
-    std = [e for e in events if e[1] in _KNOWN]
-    mine = [e for e in events if e[1] not in _KNOWN]
-    mu, hi, pc, light = _ORIG(std, total)
-    for (t, kind, kw) in sorted(mine, key=lambda e: e[0]):
+def _add(events, mu, hi, pc, light):
+    for (t, kind, kw) in sorted(events, key=lambda e: e[0]):
         g = kw.get("gain", 1.0)
         if kind == "hit":
             ae.add(hi, hit(g, kw.get("length", 3.0), kw.get("metal", 1.0)), S(t))
@@ -242,12 +228,6 @@ def _render(events, total):
             ticks(pc, t, kw["until"], kw.get("bpm", 124), g)
         else:
             raise ValueError(f"unknown score event: {kind}")
-    return mu, hi, pc, light
 
 
-if not getattr(TS.render, "_modern", False):
-    _ORIG = TS.render
-    TS.render = _render
-    TS.render._modern = True
-else:
-    _ORIG = TS.render.__globals__["_ORIG"]
+TS.register("modern", KINDS, _add, order=10)

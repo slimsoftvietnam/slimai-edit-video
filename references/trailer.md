@@ -3,7 +3,7 @@
 For a request in the style of a film trailer: "kiểu trailer phim", "có twist", "nhịp điệu dồn dập". It runs on the same pipeline. What changes is the shape of the story, the black title cards between beats, and a score made of trailer sounds instead of the composed music. Worked examples, both cut from a 3-minute talk and approved by the user:
 
 - `examples/ai-agent-trailer/` (88 s, plus `thumbs.py`) is the one to copy. It is the cut after the user's notes: the camera's colour with no darkening, titles on dark pills, wide shots only, the good lines kept, and a funny call to follow. One design renders both the TikTok cut and a 16:9 YouTube version.
-- `examples/vibe-code-trailer/` (55 s) was the first. Its shape and its score are still good, but it darkens the sky and the room, which the user later rejected.
+- `examples/vibe-code-trailer/` (55 s) was the first. Its shape and its score are still good, but it darkens the sky and the room, which the user later rejected: take only its recipes from it.
 - `examples/mcp-trailer/` (89 s, TikTok only) explains a term letter by letter, with a card for each letter as a chapter. It plays her question and her reaction to the twist as a split screen, him on top and her below: a layout the user asked for on that video and then approved for the skill.
 
 Trailers are made for TikTok first, usually 45-90 s. Length comes second to what is said: keep the lines people would quote and the warm analogies, even past 60 s. The user rejected a cut that dropped "em biết quét nhà" to stay under a minute. The kit also renders 16:9: the bars become a letterbox and the captions sit on the lower bar like film subtitles. Before delivering a 16:9 version, give every hand-placed element a `pick()` position and review YouTube stills. The AI agent example shows what moved, and keeps its TikTok values unchanged:
@@ -72,7 +72,7 @@ Take times from the words, not from guesses. `word_in(beat, word, n=1)` gives th
 | `prompt_box(ctx.ui, t, text, t_in, t_type0, t_type1, t_enter, t_out)` | A chat box that types the text; its send button lights up at `t_enter`. |
 | `title_slam(ctx.ui, t, t0, title, sub)` | The title slams in from 1.22x, with a glint across it, an accent line just above its tallest glyph and the subtitle under it. |
 
-The step counter, the clock, the collapsing list and the turning delegation arrow are recipes in the examples' `design.py`, not part of the kit.
+The step counter with its clock (`hud`) and the turning delegation arrow (`delegate`) are recipes in `examples/ai-agent-trailer/design.py`; the collapsing list (`collapse`) and the rising stakes (`escalate`) are in `examples/vibe-code-trailer/design.py`. They are not part of the kit.
 
 ## Sound: `score()`
 

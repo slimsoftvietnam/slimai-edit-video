@@ -10,7 +10,7 @@ arranged so that the music and the edit share one clock:
 
 The arrangement per chapter comes from vlog.ARRANGE (set in design.py), else from default_arrange().
 
-python vlog_music.py PROJECT OUT.wav        (the music alone, and the bar map; vlog_mix.py calls render())
+python vlog_music.py PROJECT OUT.wav        (the music alone, and the bar map; audio_mix.py's vlog mix calls render())
 """
 import json
 import os
@@ -23,7 +23,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 import audio_engine as ae  # noqa: E402
 from audio_engine import SR, hz, note_num as N  # noqa: E402
-from compose import MOTIF, MOTIF_B, PROG_CALM, PROG_MAIN  # noqa: E402
+from compose import MOTIF, MOTIF_B, PROG_CALM, PROG_MAIN, bus_chain, glide, glue, sweep_lowpass, vinyl  # noqa: E402
 
 BT = FPS = BEAT = BAR = BPM = END_HOLD = TOTAL = None
 ARRANGE = {}
@@ -211,68 +211,21 @@ def render(verbose=False):
         ae.add(buses["bell"], ae.pan(ae.bell_note(note("D6"), 0.5, 2.4), 0.1), down * SR)
         ae.add(buses["bell"], ae.pan(ae.bell_note(note("A5"), 0.3, 2.0), -0.2), down * SR)
 
-    # ---------------- mixing (the skill's chain) ----------------
+    # ---------------- mixing (the skill's chain, compose.py) ----------------
     n = n_total
-    sc = ae.sidechain_gain(n, kicks, depth=0.26, release=0.15)[:, None]
-    ir = ae.make_ir(2.4, 0.02, 0.45)
-    ep = ae.reverb(buses["ep"], ir, 0.28)
-    ep = ae.butter(ep, "highpass", 140)
-    tt = np.arange(n) / SR
-    trem = 0.16 * np.sin(2 * np.pi * (BPM / 60.0) * 3.0 * tt)       # triplet-rate shimmer, tied to the tempo
-    ep[:, 0] *= 1 + trem
-    ep[:, 1] *= 1 - trem
-    pad = ae.reverb(buses["pad"], ir, 0.45)
-    pad = ae.butter(pad, "highpass", 160)
-    pad = ae.butter(pad, "lowpass", 5200)
-    bass = ae.butter(buses["bass"], "lowpass", 900)
-    drums = buses["drums"]
-    drums = drums * 0.9 + ae.reverb(drums, ir, 1.0) * 0.08
-    drums = ae.butter(drums, "lowpass", 10500)
-    pluck = ae.reverb(buses["pluck"], ir, 0.38)
-    d = int(BEAT * 0.75 * SR)                                        # dotted-eighth echo: it answers in time
-    echo = np.zeros_like(pluck)
-    echo[d:, 1] += pluck[:-d, 0] * 0.33
-    echo[2 * d:, 0] += pluck[:-2 * d, 1] * 0.2
-    pluck = pluck + ae.butter(echo, "lowpass", 4500)
+    # a triplet-rate shimmer on the electric piano, tied to the tempo
+    sc, ir, ep, pad, bass, drums, pluck = bus_chain(buses, kicks, n, BEAT, 0.26,
+                                                    lambda tt: 0.16 * np.sin(2 * np.pi * (BPM / 60.0) * 3.0 * tt), 10500)
     bell = ae.reverb(buses["bell"], ir, 0.5)
-
     mix = (ep * 0.62 + pad * 0.5) * sc + bass * 0.38 * sc + drums * 0.50 + pluck * 0.46 + bell * 0.16
     mix = ae.butter(mix, "highpass", 32)
-    crack = np.zeros(n)
-    k = ae.RNG.random(n) < (16.0 / SR)
-    crack[k] = ae.RNG.uniform(-1, 1, k.sum()) * ae.RNG.uniform(0.2, 1.0, k.sum())
-    crack = ae.butter(crack, "bandpass", [1200, 7000]) * 0.04
-    hiss = ae.butter(ae.RNG.standard_normal(n), "bandpass", [3000, 9000]) * 0.002
-    mix += np.stack([crack + hiss, np.roll(crack, 17) + hiss], axis=1)
-
-    # master low-pass automation: glides over half a bar into each section
-    lp_points.sort()
-    cut = np.full(n, 16000.0)
-    cur = lp_points[0][1]
-    cut[:] = cur
-    for (t0, v) in lp_points:
-        s = max(0, int((t0 - BAR * 0.5) * SR))
-        e = min(n, int((t0 + BAR * 0.05) * SR))
-        if e > s:
-            cut[s:e] = np.geomspace(max(cur, 50), v, e - s)
-        cut[e:] = v
-        cur = v
-    for tc in fills():                                              # the fill opens up, whatever section it follows
+    vinyl(mix, 16.0, 0.04, 0.002)
+    # master low-pass automation: glides over half a bar into each section; the fills open up
+    cut = glide(lp_points, n, BAR)
+    for tc in fills():
         s, e = int(tc * SR), int((tc + 2 * BEAT) * SR)
         cut[s:e] = np.maximum(cut[s:e], 9000.0)
-    out = np.zeros_like(mix)
-    blk = 512
-    from scipy import signal as sg
-    zi = np.zeros((1, 2, 2))
-    for s in range(0, n, blk):
-        c = float(min(cut[s], SR / 2 * 0.9))
-        sos = sg.butter(2, c, btype="lowpass", fs=SR, output="sos")
-        seg = mix[s:s + blk]
-        y0, zi[:, :, 0] = sg.sosfilt(sos, seg[:, 0], zi=zi[:, :, 0])
-        y1, zi[:, :, 1] = sg.sosfilt(sos, seg[:, 1], zi=zi[:, :, 1])
-        out[s:s + blk, 0] = y0
-        out[s:s + blk, 1] = y1
-    mix = out
+    mix = sweep_lowpass(mix, cut)
 
     fi = int(0.03 * SR)
     mix[:fi] *= np.linspace(0, 1, fi)[:, None]
@@ -280,9 +233,7 @@ def render(verbose=False):
     fo = int(END_HOLD * SR)
     mix[end - fo:end] *= np.linspace(1, 0, fo)[:, None] ** 1.5
     mix = mix[:end]
-    mix = ae.soft_clip(mix * 1.1, 1.2)
-    mix /= np.abs(mix).max() + 1e-9
-    return (mix * 0.89).astype(np.float32)
+    return glue(mix)
 
 
 if __name__ == "__main__":

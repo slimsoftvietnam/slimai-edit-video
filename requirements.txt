@@ -2,6 +2,7 @@
 numpy
 scipy
 opencv-python
+pillow              # music_analyse.py's spectrogram
 numba
 torch
 openai-whisper

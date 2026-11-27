@@ -78,12 +78,14 @@ V.ARRANGE.update({1: [(1, "intro", "main"), (2, "stroll", "main"), (5, "light", 
   - punch-ins beyond the downbeat pushes;
   - booms. The music's fills carry the transitions.
 
-## Sound: `vlog_mix.py`
+## Sound: the `vlog` mix
 
 ```bash
-python <skill>/scripts/vlog_mix.py --project PROJECT            # music, cues, voice -> audio_youtube/final_audio.wav
-python <skill>/scripts/vlog_mix.py --project PROJECT --reuse-music   # after changing only cues
+python <skill>/scripts/audio_mix.py --project PROJECT --fmt youtube                 # music, cues, voice -> audio_youtube/final_audio.wav
+python <skill>/scripts/audio_mix.py --project PROJECT --fmt youtube --reuse-music   # after changing only cues
 ```
+
+`vlog.setup()` picks the `vlog` preset (the first line printed says `preset vlog`).
 
 - **The music** is `vlog_music.py`: the skill's lo-fi recipe (electric piano, pad, bass, soft drums, the pluck motif, vinyl hiss) played on `beats.json`. Bars count from each chapter's downbeat. Under every card a fill plays: a dominant chord and a pluck run that climbs into the downbeat, with no drums.
 - **Sections** come from `vlog.ARRANGE`: `{chapter: [(first bar from 1, style, progression)]}`.

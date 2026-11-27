@@ -39,7 +39,7 @@ vlog_cut.json:
   fixes: as in select.json (passed through).
 
 beats.json lists every cut (frame), the chapters with their downbeats, the cards, all B-roll, the overlays and the
-muted holds. vlog.py, vlog_music.py and vlog_mix.py read it, so picture, music and sound share one clock.
+muted holds. vlog.py, vlog_music.py and audio_mix.py's vlog mix read it, so picture, music and sound share one clock.
 """
 import json
 import os

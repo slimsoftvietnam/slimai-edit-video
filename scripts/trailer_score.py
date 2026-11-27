@@ -16,6 +16,9 @@ Kinds, by stem (t in output seconds; gain defaults to 1):
                                         lighter while it plays
          bells(notes, step=0.09)       piano(notes=[(dt, midi), ...])
 Chords and notes are MIDI numbers; prog / chords are [(root, [chord notes]), ...] (D_MIN, BB_MAJ, D_MAJ below).
+
+Other modules add kinds with register(): modern_score.py (hit, subdrop, shepard, pulse, beat...) and track_music.py
+(track, roll). They are mixed after the kinds above, in a fixed order, so it does not matter which is imported first.
 """
 import numpy as np
 
@@ -178,8 +181,28 @@ def drive(mu, t0, until, bpm=120, chords=PROG_EPIC, gain=1.0):
         b += 1
 
 
+_GROUPS = []      # [(order, name, kinds, fn)]: score kinds that other modules registered
+
+
+def register(name, kinds, fn, order):
+    """add score kinds from another module. fn(events, mu, hi, pc, light) adds its events (as given, in the order they
+    were registered with story.score()) into the stems, in place, and may append (t0, t1) windows of lighter ducking to
+    light. Groups run after the kinds above (by then the music stem has its room reverb), lowest order first:
+    modern_score 10, track_music 20. Registering a name again replaces it."""
+    _GROUPS[:] = sorted([g for g in _GROUPS if g[1] != name] + [(order, name, frozenset(kinds), fn)], key=lambda g: g[0])
+
+
 def render(events, total):
     """events: story.SCORE. -> music, hits, perc (float32 stereo, `total` s) and the windows of lighter ducking."""
+    ext = frozenset().union(*(g[2] for g in _GROUPS))
+    mu, hi, pc, light = _render_own([e for e in events if e[1] not in ext], total)
+    for (_order, _name, kinds, fn) in _GROUPS:
+        fn([e for e in events if e[1] in kinds], mu, hi, pc, light)
+    return mu, hi, pc, light
+
+
+def _render_own(events, total):
+    """the kinds of this module"""
     n = S(total)
     mu, hi, pc = (np.zeros((n, 2), np.float32) for _ in range(3))
     light = []

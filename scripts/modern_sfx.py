@@ -1,8 +1,8 @@
 """Modern UI sounds (user, 2026-11-17: "hiệu ứng sound click hiện đại hơn chút"; the motion style, references/motion.md). The skill's pop is
 a 90 ms sine sweep (a cartoon "bloop") and its tick a plain ping; these are tight, crisp UI sounds instead: a bright
 transient, a short plucked body tuned to the episode's key, a soft low thump for weight, a tiny room. A design imports
-this module; it replaces audio_engine.sfx_pop and sfx_tick, which audio_mix's render_sfx calls at mix time (each cue is
-then peak-normalised there). set_key(root, minor) tunes them to the music (default Bb minor, the Trap Banger track).
+this module; it swaps in its pop and tick with audio_engine.use_sfx(), and audio_mix's render_sfx calls them at mix
+time (each cue is then peak-normalised there). set_key(root, minor) tunes them to the music (default Bb minor, the Trap Banger track).
 
 Pitch: the cue's f1 (pop) or f (tick) is snapped to the nearest D natural minor note, so design.py passes notes.
 """
@@ -32,7 +32,7 @@ def _snap(f):
 
 
 def _space(y, wet):
-    """a tiny room, mono: the skill's own effects (sfx_connect, sfx_type) mix these into mono buffers."""
+    """a tiny room, mono: the skill's own effects (audio_mix.sfx_connect) mix these into mono buffers."""
     if not _ROOM:
         _ROOM.append(ae.make_ir(0.35, 0.004, 0.6))
     return ae.reverb(y.astype(np.float32), _ROOM[0], wet)[:, 0]
@@ -63,5 +63,4 @@ def tick(vel=1.0, f=2600):
     return (_space(y, 0.1) * 0.5 * vel).astype(np.float32)
 
 
-ae.sfx_pop = pop
-ae.sfx_tick = tick
+ae.use_sfx(pop=pop, tick=tick)

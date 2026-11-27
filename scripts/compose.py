@@ -63,6 +63,89 @@ def humanize(t, amt=0.006):
     return t + ae.RNG.uniform(-amt, amt)
 
 
+# ----------------------------------------------------------------------------
+# the mixing chain, shared with vlog_music.py (the order of the calls is part of the sound: make_ir draws from the
+# shared random generator)
+# ----------------------------------------------------------------------------
+def bus_chain(buses, kicks, n, beat, sc_depth, trem, drums_lp):
+    """the buses' effects: side-chain pumping from the kicks, one room for all, the electric piano's tremolo (trem(tt)
+    -> depth per sample), filters and the pluck's dotted-eighth echo -> (sc, ir, ep, pad, bass, drums, pluck)"""
+    sc = ae.sidechain_gain(n, kicks, depth=sc_depth, release=0.15)[:, None]
+    ir = ae.make_ir(2.4, 0.02, 0.45)
+    ep = ae.reverb(buses["ep"], ir, 0.28)
+    ep = ae.butter(ep, "highpass", 140)
+    tt = np.arange(n) / SR
+    tr = trem(tt)
+    ep[:, 0] *= 1 + tr
+    ep[:, 1] *= 1 - tr
+    pad = ae.reverb(buses["pad"], ir, 0.45)
+    pad = ae.butter(pad, "highpass", 160)
+    pad = ae.butter(pad, "lowpass", 5200)
+    bass = ae.butter(buses["bass"], "lowpass", 900)
+    drums = buses["drums"]
+    drums = drums * 0.9 + ae.reverb(drums, ir, 1.0) * 0.08
+    drums = ae.butter(drums, "lowpass", drums_lp)
+    pluck = ae.reverb(buses["pluck"], ir, 0.38)
+    d = int(beat * 0.75 * SR)                                       # dotted-eighth echo: it answers in time
+    echo = np.zeros_like(pluck)
+    echo[d:, 1] += pluck[:-d, 0] * 0.33
+    echo[2 * d:, 0] += pluck[:-2 * d, 1] * 0.2
+    pluck = pluck + ae.butter(echo, "lowpass", 4500)
+    return sc, ir, ep, pad, bass, drums, pluck
+
+
+def vinyl(mix, rate, crack_gain, hiss_gain):
+    """vinyl warmth, added in place: a faint crackle (about `rate` clicks a second) and hiss"""
+    n = len(mix)
+    crack = np.zeros(n)
+    k = ae.RNG.random(n) < (rate / SR)
+    crack[k] = ae.RNG.uniform(-1, 1, k.sum()) * ae.RNG.uniform(0.2, 1.0, k.sum())
+    crack = ae.butter(crack, "bandpass", [1200, 7000]) * crack_gain
+    hiss = ae.butter(ae.RNG.standard_normal(n), "bandpass", [3000, 9000]) * hiss_gain
+    mix += np.stack([crack + hiss, np.roll(crack, 17) + hiss], axis=1)
+
+
+def glide(lp_points, n, bar):
+    """the master low-pass cutoff per sample from [(time, Hz)]: it glides over the half bar before each point"""
+    lp_points.sort()
+    cut = np.full(n, 16000.0)
+    if lp_points:
+        cur = lp_points[0][1]
+        cut[:] = cur
+        for (t0, v) in lp_points:
+            s = max(0, int((t0 - bar * 0.5) * SR))
+            e = min(n, int((t0 + bar * 0.05) * SR))
+            if e > s:
+                cut[s:e] = np.geomspace(max(cur, 50), v, e - s)
+            cut[e:] = v
+            cur = v
+    return cut
+
+
+def sweep_lowpass(mix, cut):
+    """the mix through a 2-pole low-pass whose cutoff follows `cut`, block by block"""
+    from scipy import signal as sg
+    out = np.zeros_like(mix)
+    blk = 512
+    zi = np.zeros((1, 2, 2))
+    for s in range(0, len(mix), blk):
+        c = float(min(cut[s], SR / 2 * 0.9))
+        sos = sg.butter(2, c, btype="lowpass", fs=SR, output="sos")
+        seg = mix[s:s + blk]
+        y0, zi[:, :, 0] = sg.sosfilt(sos, seg[:, 0], zi=zi[:, :, 0])
+        y1, zi[:, :, 1] = sg.sosfilt(sos, seg[:, 1], zi=zi[:, :, 1])
+        out[s:s + blk, 0] = y0
+        out[s:s + blk, 1] = y1
+    return out
+
+
+def glue(mix):
+    """gentle saturation, then the peak normalised to 0.89"""
+    mix = ae.soft_clip(mix * 1.1, 1.2)
+    mix /= np.abs(mix).max() + 1e-9
+    return (mix * 0.89).astype(np.float32)
+
+
 def render(plan):
     BPM = float(plan.get("bpm", 96.0))
     BEAT = 60.0 / BPM
@@ -152,69 +235,14 @@ def render(plan):
 
     # ---------------- mixing ----------------
     n = n_total
-    sc = ae.sidechain_gain(n, kicks, depth=0.32, release=0.15)[:, None]
-    ir = ae.make_ir(2.4, 0.02, 0.45)
-    ep = ae.reverb(buses["ep"], ir, 0.28)
-    ep = ae.butter(ep, "highpass", 140)
     # tremolo / auto-pan on the EP for movement
-    tt = np.arange(n) / SR
-    trem = 0.18 * np.sin(2 * np.pi * 4.2 * tt)
-    ep[:, 0] *= 1 + trem
-    ep[:, 1] *= 1 - trem
-    pad = ae.reverb(buses["pad"], ir, 0.45)
-    pad = ae.butter(pad, "highpass", 160)
-    pad = ae.butter(pad, "lowpass", 5200)
-    bass = ae.butter(buses["bass"], "lowpass", 900)
-    drums = buses["drums"]
-    drums = drums * 0.9 + ae.reverb(drums, ir, 1.0) * 0.08
-    drums = ae.butter(drums, "lowpass", 11000)
-    pluck = ae.reverb(buses["pluck"], ir, 0.38)
-    # ping-pong-ish echo on pluck (dotted 8th)
-    d = int(BEAT * 0.75 * SR)
-    echo = np.zeros_like(pluck)
-    echo[d:, 1] += pluck[:-d, 0] * 0.33
-    echo[2 * d:, 0] += pluck[:-2 * d, 1] * 0.2
-    pluck = pluck + ae.butter(echo, "lowpass", 4500)
-
+    sc, ir, ep, pad, bass, drums, pluck = bus_chain(buses, kicks, n, BEAT, 0.32,
+                                                    lambda tt: 0.18 * np.sin(2 * np.pi * 4.2 * tt), 11000)
     mix = (ep * 0.62 + pad * 0.5) * sc + bass * 0.40 * sc + drums * 0.58 + pluck * 0.42
     mix = ae.butter(mix, "highpass", 32)
-    # vinyl warmth: faint crackle + hiss
-    crack = np.zeros(n)
-    k = ae.RNG.random(n) < (22.0 / SR)
-    crack[k] = ae.RNG.uniform(-1, 1, k.sum()) * ae.RNG.uniform(0.2, 1.0, k.sum())
-    crack = ae.butter(crack, "bandpass", [1200, 7000]) * 0.05
-    hiss = ae.butter(ae.RNG.standard_normal(n), "bandpass", [3000, 9000]) * 0.0025
-    mix += np.stack([crack + hiss, np.roll(crack, 17) + hiss], axis=1)
-
+    vinyl(mix, 22.0, 0.05, 0.0025)
     # master low-pass automation (block-wise, smooth cutoff glide)
-    lp_points.sort()
-    cut = np.full(n, 16000.0)
-    if lp_points:
-        times = np.array([p[0] for p in lp_points])
-        vals = np.array([p[1] for p in lp_points], float)
-        # glide over 1 bar into each new value
-        cur = vals[0]
-        cut[:] = vals[0]
-        for (t0, v) in lp_points:
-            s = max(0, int((t0 - BAR * 0.5) * SR))
-            e = min(n, int((t0 + BAR * 0.05) * SR))
-            if e > s:
-                cut[s:e] = np.geomspace(max(cur, 50), v, e - s)
-            cut[e:] = v
-            cur = v
-    out = np.zeros_like(mix)
-    blk = 512
-    from scipy import signal as sg
-    zi = np.zeros((1, 2, 2))
-    for s in range(0, n, blk):
-        c = float(min(cut[s], SR / 2 * 0.9))
-        sos = sg.butter(2, c, btype="lowpass", fs=SR, output="sos")
-        seg = mix[s:s + blk]
-        y0, zi[:, :, 0] = sg.sosfilt(sos, seg[:, 0], zi=zi[:, :, 0])
-        y1, zi[:, :, 1] = sg.sosfilt(sos, seg[:, 1], zi=zi[:, :, 1])
-        out[s:s + blk, 0] = y0
-        out[s:s + blk, 1] = y1
-    mix = out
+    mix = sweep_lowpass(mix, glide(lp_points, n, BAR))
 
     # stops: music cuts out for ~1 beat (gain dip with fast fades), for punchlines
     g = np.ones(n, np.float32)
@@ -238,10 +266,7 @@ def render(plan):
     mix[end - fo:end] *= np.linspace(1, 0, fo)[:, None] ** 1.5
     mix[end:] = 0
     mix = mix[:end]
-    # glue: gentle saturation and normalise peak
-    mix = ae.soft_clip(mix * 1.1, 1.2)
-    mix /= np.abs(mix).max() + 1e-9
-    return (mix * 0.89).astype(np.float32)
+    return glue(mix)
 
 
 def write_wav(path, x):

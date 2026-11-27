@@ -12,7 +12,7 @@ same clock, so graphics, reframes and transitions land on beats too:
   cuts into and out of B-roll, the YouTube chapter list, and the B-roll drawn over speech (overlays in beats.json).
 - drawing pieces in the warm palette: plate, mini (a titled plate for the top band), paper (a page of the travel
   journal), chip_row, side_chip, step_row, arrow_h, strike_line, code_lines, shade, rule, underline, tilt, scaled.
-- ARRANGE: the music's sections per chapter, for vlog_music.py; QUIET: extra windows where vlog_mix.py mutes the
+- ARRANGE: the music's sections per chapter, for vlog_music.py; QUIET: extra windows where audio_mix.py mutes the
   clip's own sound.
 
 For mock software pieces (a browser window, fields, buttons, a cursor that clicks, chat bubbles) use ui.py.
@@ -48,7 +48,7 @@ CREAM = (255, 244, 224)
 PAPER = (252, 244, 228)
 INKB = (38, 32, 26)                                            # warm ink for text on paper
 ARRANGE = {}     # chapter -> [(first bar from 1, style, progression)], read by vlog_music.py (defaults there)
-QUIET = []       # extra (t0, t1) where vlog_mix.py mutes the clip's sound (B-roll, holds and the end are automatic)
+QUIET = []       # extra (t0, t1) where audio_mix.py mutes the clip's sound (B-roll, holds and the end are automatic)
 
 S_.PIP_T = BEAT / 2            # the speaker shrinks / grows back in half a beat, so both ends of a PiP sit on the grid
 
@@ -74,15 +74,6 @@ def qb(t):
 def bar(ch, n, beat=1.0):
     """time of bar n (from 1), beat (from 1.0) of chapter ch"""
     return DOWN[ch] + ((n - 1) * 4 + (beat - 1.0)) * BEAT
-
-
-def bar_lines(ch, t_end):
-    """the downbeats of chapter ch up to t_end"""
-    out, t = [], DOWN[ch]
-    while t < t_end - 1e-6:
-        out.append(t)
-        t += BAR
-    return out
 
 
 def w(beat, word, n=1):
@@ -247,11 +238,6 @@ def underline(L, x0, x1, y, k, rgb=AMBER, a=255, width=7.0):
     L.mark(x0 - 10, y - 16, x1 + 10, y + 16, pad=14)
 
 
-def label(L, text, x, y, size=34, rgb=WHITE, a=255, kind="semi", align="left", shadow=8, tracking=0.0):
-    return draw_text(L, text, font(kind, size), x, y, rgb=rgb, a=a, align=align, shadow=shadow, shadow_a=170,
-                     tracking=tracking)
-
-
 def plate(L, x0, y0, x1, y1, a, r=26, accent=None, glow=0.0, dark=168):
     """a dark glass-like plate with a hairline (cheap: no blur of the picture)"""
     c = L.c
@@ -409,23 +395,9 @@ def code_lines(L, x, y, lines, a, size=30, k=1.0, lh=1.5, hot=None, hot_a=0.0, h
     L.mark(x - 20, y - size * 1.2, x + (width or 700), yy, pad=10)
 
 
-_ipa = {}
-
-
 def ipa_font(size):
     """Times New Roman from the system fonts, for phonetic symbols (the skill's fonts have none)"""
-    key = round(size, 1)
-    if key not in _ipa:
-        p = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", "times.ttf")
-        tf = skia.Typeface.MakeFromFile(p) if os.path.exists(p) else None
-        if tf is None:
-            _ipa[key] = font("medium", size)
-        else:
-            f = skia.Font(tf, float(size))
-            f.setSubpixel(True)
-            f.setEdging(skia.Font.Edging.kAntiAlias)
-            _ipa[key] = f
-    return _ipa[key]
+    return E.system_font("times.ttf", size, "medium")
 
 
 # ----------------------------------------------------------------------------
@@ -474,6 +446,9 @@ def _chapter_of(t):
     return max(ns) if ns else None
 
 
+_SETUP = []
+
+
 def setup(titles, yt_chapters=None, tag_hold=2.4, tag_holds=None, no_tags=(), pip_view=None, reframe_bars=2,
           punch=0.022):
     """call once, at the top of design.py.
@@ -484,6 +459,11 @@ def setup(titles, yt_chapters=None, tag_hold=2.4, tag_holds=None, no_tags=(), pi
     no_tags: chapters without a tag. pip_view: {speaker: (card width in source px, x offset)} when two people sit
     close: the picture-in-picture card then shows that speaker alone, head to knees. reframe_bars: wide and medium
     alternate every this many bars. punch: the push on each chapter's downbeat (0 for none)."""
+    if _SETUP:            # a second call would register every shot, card, tag and cue twice
+        print("vlog.setup() was called again: ignored (call it once, at the top of design.py)")
+        return
+    _SETUP.append(True)
+    S_.MIX = "vlog"       # audio_mix.py: music on the beat grid, the clip's own sound out over B-roll
     total = f"{len(DOWN):02d}"
     broll = set(b for (_a, _b, b) in BROLL)
     # shots: wide / medium alternate every `reframe_bars` bars from each chapter's downbeat; B-roll is the two-shot
@@ -515,34 +495,22 @@ def setup(titles, yt_chapters=None, tag_hold=2.4, tag_holds=None, no_tags=(), pi
     for n in sorted(names):
         YT_CHAPTERS.append((0.0 if n == min(DOWN) else CARD_OF.get(n, DOWN.get(n, 0.0)), names[n]))
     if pip_view:
-        def _card_view(spk, cw, ch_):
-            fx, fy, _ = E.FACE[spk]
-            w_src, dx = pip_view.get(spk, (800.0, 0.0))
-            s = cw / w_src
-            h_src = ch_ / s
-            cx = fx + dx
-            cy = fy + 0.10 * h_src
-            cx = min(max(cx, w_src / 2), E.SRC_W - w_src / 2)
-            cy = min(max(cy, h_src / 2), E.SRC_H - h_src / 2)
-            return cx, cy, s
-        E.card_view = _card_view
+        E.PIP_VIEW = dict(pip_view)
 
     def _soft_auto_cues():
-        """the skill's automatic cues at a vlog's level; clean cuts into and out of B-roll"""
+        """the skill's automatic cues at a vlog's level"""
         for (a, b) in PIP:
             cue(a + S_.PIP_T * 0.6, "whoosh", 0.26, length=0.5, direction=1)
             cue(b + S_.PIP_T * 0.6, "whoosh", 0.22, length=0.5, direction=-1)
         for i in range(1, len(CLIPS)):
             if CLIPS[i]["spk"] != CLIPS[i - 1]["spk"] and CLIPS[i]["beat"] not in broll and CLIPS[i - 1]["beat"] not in broll:
                 cue(CLIPS[i]["out_in"] + 0.03, "whoosh", 0.3, length=0.42, direction=1)
-        # the engine whips the camera at a speaker change and lets a caption linger over a cut; an empty split at a
-        # cut time switches both off there (render.near_split, story.build_lines). It has to run here, after story
-        # has cleared SPLIT for 16:9.
-        for (a, b) in quiet:
-            S_.SPLIT.append((a, a, None, None))
-            S_.SPLIT.append((b, b, None, None))
 
-    S_._auto_cues = _soft_auto_cues
+    S_.AUTO_CUES = _soft_auto_cues
+    # clean cuts into and out of B-roll: the engine would whip the camera at a speaker change there and let a caption
+    # linger over the cut (render.near_split, story.build_lines)
+    for (a, b) in quiet:
+        S_.CLEAN_CUTS.extend((a, b))
     if OVERLAYS:
         PRE.append(_draw_overlays)
     # the cards and the tags

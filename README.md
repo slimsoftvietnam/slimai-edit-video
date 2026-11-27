@@ -60,8 +60,35 @@ Trên laptop i5, video 2 phút từ nguồn 6 phút cần khoảng 1 giờ máy 
 | `SKILL.md` | Quy trình Claude làm theo |
 | `scripts/` | Toàn bộ code: màu phim, dựng hình, kiểu trailer, kiểu vlog cắt theo phách nhạc, hiệu ứng motion và phụ đề màu, âm thanh, ảnh minh họa phong cách và màu, kiểm tra, từ khóa YouTube |
 | `references/` | Cẩm nang thiết kế, cách dựng trailer, vlog và motion viral, màu và độ nét, thông số nền tảng và cách soạn nội dung đăng YouTube, các lỗi đã gặp |
-| `examples/` | Bảy dự án thật (clip 40 giây, video 2 phút, ba trailer 55, 88 và 89 giây, bản vlog YouTube 4 phút 44 và bản motion TikTok 89 giây của cùng một tập) và bộ nội dung đăng YouTube mẫu. Không kèm video nguồn và nhạc có bản quyền |
+| `examples/` | Bảy dự án thật (clip 40 giây, video 2 phút, ba trailer 55, 88 và 89 giây, bản vlog YouTube 4 phút 44 và bản motion TikTok 89 giây của cùng một tập), kèm bộ nội dung đăng YouTube mẫu. Không kèm video nguồn và nhạc có bản quyền |
 | `assets/` | Font và model tách người |
+| `tests/regress.py` | Kiểm tra trước và sau khi sửa code: chạy lại bản sao của một project, so từng khung hình và từng file tiếng |
+
+Các bước và file chính trong `scripts/`:
+
+| Bước | File |
+|---|---|
+| Nhận video, nghe lời thoại | `init_project.py`, `transcribe.py`, `find_faces.py`, `speaker_hints.py` |
+| Hỏi phong cách và màu | `style_preview.py`, `look_preview.py` |
+| Cắt | `select.json` → `build_timeline.py`; kiểu vlog: `vlog_cut.json` → `beat_fit.py`, `clamp_words.py` |
+| Master và tách người | `build_master.py` (màu, `film_look.py`), `matte.py` |
+| Thiết kế (`design.py` của project) | `story.py` và `engine.py`, `gfx.py`; kiểu trailer: `trailer.py`; vlog: `vlog.py`; motion: `fx.py`, `rawstyle.py`, `rawgroups.py`; giao diện máy tính: `ui.py` |
+| Âm thanh | `audio_mix.py` (preset `standard`, `score`, `score_solo`, `vlog`) gọi `compose.py`, `vlog_music.py`, `trailer_score.py`, `modern_score.py`, `track_music.py`, `modern_sfx.py`, `audio_engine.py`; nhạc có bản quyền: `music_analyse.py` |
+| Render, soát | `render.py`, `review.py` |
+| Giao | `episode.py`, `finish.py`, `export_captions.py`, `thumbnail.py`, `youtube_meta.py` |
+
+## Kiểm tra khi sửa skill
+
+Trước khi sửa code, tạo bản sao của một vài project đã giao và chụp mốc; sửa xong chụp lại và so. Hình và tiếng phải giống hệt từng bit, trừ chỗ cố ý thay đổi.
+
+```bash
+python tests/regress.py clone projects/tap16 projects/_regress/tap16      # master, matte, tiếng gốc: hardlink
+python tests/regress.py snapshot projects/_regress/tap16 snap/truoc       # theo regress.json trong bản sao
+python tests/regress.py snapshot projects/_regress/tap16 snap/sau
+python tests/regress.py compare snap/truoc snap/sau
+```
+
+`regress.json` của bản sao liệt kê các lệnh cần chạy (dựng timeline, trộn tiếng...), các thời điểm lấy khung hình và các file cần so. Xem đầu file `tests/regress.py`.
 
 ## Bên thứ ba
 

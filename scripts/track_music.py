@@ -100,11 +100,9 @@ def piece(src_t, dur, gain=1.0, fade_in=0.02, fade_out=0.08, track=None, hp=None
     return (y * env[:, None] * gain).astype(np.float32)
 
 
-def _render(events, total):
+def _add(events, mu, hi, pc, light):
     mine = [e for e in events if e[1] == "track"]
     rolls = [e for e in events if e[1] == "roll"]
-    rest = [e for e in events if e[1] not in ("track", "roll")]
-    mu, hi, pc, light = _PREV(rest, total)
     for (t, _k, kw) in rolls:                          # t = where the roll ends (on the stop before a drop)
         ln = kw.get("length", 4.0)
         ae.add(hi, (roll(ln, kw.get("bpm", 86.99), 1.0) * kw.get("gain", 1.0)).astype(np.float32), int(round((t - ln) * SR)))
@@ -118,12 +116,6 @@ def _render(events, total):
         ae.add(mu, y, int(round(t * SR)))
         if kw.get("light"):
             light.append((t, t + kw["dur"]))
-    return mu, hi, pc, light
 
 
-if not getattr(TS.render, "_track", False):
-    _PREV = TS.render
-    TS.render = _render
-    TS.render._track = True
-else:
-    _PREV = TS.render.__globals__["_PREV"]
+TS.register("track", ("track", "roll"), _add, order=20)

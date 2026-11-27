@@ -24,7 +24,8 @@ if shutil.which("ffmpeg"):
     e = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"], capture_output=True, text=True).stdout
     check("ffmpeg encoder libx264", "libx264" in e)
 for mod, hint in (("numpy", ""), ("scipy", ""), ("cv2", "pip install opencv-python"), ("numba", ""), ("torch", ""),
-                  ("whisper", "pip install openai-whisper"), ("skia", "pip install skia-python==87.9")):
+                  ("whisper", "pip install openai-whisper"), ("skia", "pip install skia-python==87.9"),
+                  ("PIL", "pip install pillow")):
     try:
         m = importlib.import_module(mod)
         check(mod, True, getattr(m, "__version__", ""))
